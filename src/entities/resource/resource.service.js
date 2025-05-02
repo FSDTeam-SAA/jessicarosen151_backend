@@ -34,6 +34,6 @@ export const updateResourceService = async (id, updateData, user) => {
 
 export const deleteResourceService = async (id) => {
   const deleted = await Resource.findByIdAndDelete(id);
-  if (!deleted) throw new Error("Resource not found or already deleted");
+  if (!deleted) throw new Error("Resource not found or alreadys deleted");
   return deleted;
 };
