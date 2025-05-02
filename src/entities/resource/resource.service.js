@@ -20,7 +20,7 @@ export const getResourceByIdService = async (id) => {
 };
 
 
-export const updateResourceService = async (id, updateData, user) => {
+export const updateResourceService = async (id, updateData, user) => { 
 
     if (updateData.status && user.role !== "ADMIN") {
        throw new Error("Only admin can update the status of a resource");
