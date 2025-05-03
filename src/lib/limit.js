@@ -11,5 +11,6 @@ const emailVerificationLimiter = rateLimit({
   keyGenerator: (req) => req.body.email,
 });
 
+
 export { globalLimiter, emailVerificationLimiter };
 

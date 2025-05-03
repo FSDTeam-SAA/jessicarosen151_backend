@@ -54,8 +54,8 @@ const sellerMiddleware = (req, res, next) => {
     const decoded = jwt.verify(token, accessTokenSecrete);
     req.user = decoded;
 
-    if (req.user.role !== RoleType.SUPER_ADMIN) {
-      return res.status(403).json({ message: 'SuperAdmin access only' });
+    if (req.user.role !== RoleType.SELLER) {
+      return res.status(403).json({ message: 'Seller access only' });
     }
 
     next();
