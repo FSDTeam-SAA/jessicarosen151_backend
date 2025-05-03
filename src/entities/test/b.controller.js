@@ -24,7 +24,7 @@ export const createTest = async (req, res) => {
     const test = await createTestService(req.body);
     res.status(201).json(test);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });   
   }
 };
 
