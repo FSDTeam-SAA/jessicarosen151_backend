@@ -11,14 +11,27 @@ import {
 
 
 
-export const registerUser = async (req, res) => {
+export const registerUser = async (req, res, next) => {
   try {
     const { firstName, lastName, phoneNumber, email, password } = req.body;
 
     await registerUserService({ firstName, lastName, phoneNumber, email, password });
     generateResponse(res, 201, true, 'Registered user successfully!', null);
-  } catch (error) {
-    generateResponse(res, 400, false, 'Registration failed', error.message);
+  }
+
+  catch (error) {
+
+    if (error.message === 'User already registered.') {
+      generateResponse(res, 400, false, 'User already registered', null);
+    }
+
+    else if (error.message === 'Registration failed') {
+      generateResponse(res, 400, false, 'Registration failed', null);
+    }
+
+    else {
+      next(error)
+    }
   }
 };
 
