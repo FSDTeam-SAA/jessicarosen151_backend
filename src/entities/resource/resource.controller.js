@@ -3,10 +3,12 @@ import {
   getAllResourcesService,
   getResourceByIdService,
   updateResourceService,
-  deleteResourceService
+  deleteResourceService,
+  getSellerResourcesService,
 } from "./resource.service.js";
 import { generateResponse } from "../../lib/responseFormate.js";
 import { cloudinaryUpload } from "../../lib/cloudinaryUpload.js";
+
 
 
 export const createResource = async (req, res) => {
@@ -95,9 +97,22 @@ export const updateResource = async (req, res) => {
 
 export const deleteResource = async (req, res) => {
   try {
-    const deleted = await deleteResourceService(req.params.id);
+    const deleted = await deleteResourceService(req.params.id, req.user);
     generateResponse(res, 200, true, "Resource deleted successfully", deleted);
   } catch (error) {
     generateResponse(res, 400, false, "Failed to delete resource", error.message);
+  }
+};
+
+
+export const getSellerResources = async (req, res) => {
+  try {
+    const sellerId = req.user._id;
+
+    const resources = await getSellerResourcesService(sellerId);
+
+    generateResponse(res, 200, true, "Fetched seller resources successfully", resources);
+  } catch (error) {
+    generateResponse(res, 500, false, "Failed to fetch seller resources", error.message);
   }
 };

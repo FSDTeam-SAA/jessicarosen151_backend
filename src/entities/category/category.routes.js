@@ -3,7 +3,6 @@ import { createCategory, deleteCategory, getAllCategories, getCategoryById, upda
 import {adminMiddleware} from "../../core/middlewares/authMiddleware.js";
 
 
-
 const router = express.Router();
 
 // Public 
