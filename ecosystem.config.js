@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     apps: [
       {
         name: 'node-api',
@@ -12,4 +12,4 @@ module.exports = {
         }
       }
     ]
-  };
+};

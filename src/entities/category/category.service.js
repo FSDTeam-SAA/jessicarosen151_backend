@@ -1,6 +1,5 @@
 import Category from "./category.model.js";
 
-
 export const createCategoryService = async ({ name, description, createdBy }) => {
   const existing = await Category.findOne({ name: name.trim() });
   if (existing) throw new Error('Category already exists.');
