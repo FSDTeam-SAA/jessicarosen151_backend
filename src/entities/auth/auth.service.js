@@ -35,7 +35,7 @@ export const registerUserService = async ({
   const savedUser = await newUser.save();
   if (!savedUser) throw new Error('Registration failed');
 
-  return savedUser;
+  return;
 };
 
 
