@@ -31,7 +31,7 @@ export const createTest = async (req, res) => {
 export const updateTest = async (req, res) => {
   try {
     const test = await updateTestService(req.params.id, req.body);
-    if (!test) return res.status(404).json({ message: 'Test not found' });
+    if (!test) return res.status(404).json({ message: 'Test not founds' });
     res.status(200).json(test);
   } catch (error) {
     res.status(500).json({ message: error.message });
