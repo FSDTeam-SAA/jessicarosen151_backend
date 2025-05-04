@@ -8,7 +8,6 @@ import verificationCodeTemplate from '../../lib/emailTemplates.js';
 export const registerUserService = async ({
   firstName,
   lastName,
-  phoneNumber,
   email,
   password
 }) => {
@@ -18,38 +17,31 @@ export const registerUserService = async ({
   const newUser = new User({
     firstName,
     lastName,
-    phoneNumber,
     email,
     password
   });
 
-  const savedUser = await newUser.save();
-  if (!savedUser) throw new Error('Registration failed');
-
+  await newUser.save();
   return;
 };
 
 
 export const loginUserService = async ({ email, password }) => {
-  const user = await User.findOne({ email }).lean()
+  if (!email || !password) throw new Error('Email and password are required');
+
+  const user = await User.findOne({ email }).select("-password");
   if (!user) throw new Error('User not found');
 
-  const isMatch = await user.comparePassword(password, user.password);
-  if (!isMatch) throw new Error('Invalid credentials');
+  const isMatch = await user.comparePassword(user._id, password);
+  if (!isMatch) throw new Error('Invalid password');
 
-  delete user.password;
+  const payload = { _id: user._id };
 
-  const payload = {
-    _id: user._id
-  }
-
-  const data = {
+  return {
     user,
     accessToken: user.generateAccessToken(payload),
-    refreshToken: user.generateRefreshToken(payload)
-  }
-
-  return data
+    refreshToken: user.generateRefreshToken(payload),
+  };
 };
 
 export const refreshAccessTokenService = async (refreshToken) => {
