@@ -13,8 +13,8 @@ export const registerUser = async (req, res, next) => {
   const { firstName, lastName, email, password } = req.body;
   try {
 
-    await registerUserService({ firstName, lastName, email, password });
-    generateResponse(res, 201, true, 'Registered user successfully!', null);
+    const data = await registerUserService({ firstName, lastName, email, password });
+    generateResponse(res, 201, true, 'Registered user successfully!', data);
   }
 
   catch (error) {
@@ -34,6 +34,7 @@ export const loginUser = async (req, res, next) => {
 
   try {
     const data = await loginUserService({ email, password })
+    console.log(data)
     generateResponse(res, 200, true, 'Login successful', data);
   }
 
@@ -92,16 +93,6 @@ export const refreshAccessToken = async (req, res, next) => {
   }
 };
 
-// export const updatePassword = async (req, res) => {
-//   try {
-//     const { email, oldPassword, newPassword } = req.body;
-//     await updatePasswordService({ email, oldPassword, newPassword });
-//     generateResponse(res, 200, true, "Password updated successfully", null);
-//   } catch (error) {
-//     generateResponse(res, 400, false, "Update password failed", error.message);
-//   }
-// };
-
 export const forgetPassword = async (req, res, next) => {
 
   const { email } = req.body;
@@ -135,7 +126,11 @@ export const verifyCode = async (req, res, next) => {
   }
 
   catch (error) {
-    if (error.message === 'Invalid email') {
+    if (error.message === 'Email and otp are required') {
+      generateResponse(res, 400, false, 'Email and otp is required', null);
+    }
+
+    else if (error.message === 'Invalid email') {
       generateResponse(res, 400, false, 'Invalid email', null);
     }
 
@@ -161,7 +156,11 @@ export const resetPassword = async (req, res, next) => {
   }
 
   catch (error) {
-    if (error.message === 'Invalid email') {
+    if (error.message === 'Email and new password are required') {
+      generateResponse(res, 400, false, 'Email and new password are required', null);
+    }
+
+    else if (error.message === 'Invalid email') {
       generateResponse(res, 400, false, 'Invalid email', null);
     }
 
