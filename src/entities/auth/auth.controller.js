@@ -1,8 +1,9 @@
 import { generateResponse } from '../../lib/responseFormate.js';
+import User from './auth.model.js';
 import {
   registerUserService,
   loginUserService,
-  refreshTokenService,
+  refreshAccessTokenService,
   forgetPasswordService,
   verifyCodeService,
   resetPasswordService,
@@ -36,71 +37,150 @@ export const registerUser = async (req, res, next) => {
 };
 
 
-export const loginUser = async (req, res) => {
+export const loginUser = async (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return generateResponse(res, 400, false, 'Email and password are required', null);
+  }
+
   try {
-    const { email, password } = req.body;
-    const tokens = await loginUserService({ email, password });
-    generateResponse(res, 200, true, 'Login successful', tokens);
-  } catch (error) {
-    generateResponse(res, 401, false, 'Login failed', error.message);
+    const data = await loginUserService({ email, password })
+    generateResponse(res, 200, true, 'Login successful', data);
+  }
+
+  catch (error) {
+    if (error.message === 'User not found') {
+      generateResponse(res, 404, false, 'User not found', null);
+    }
+
+    else if (error.message === 'Invalid credentials') {
+      generateResponse(res, 400, false, 'Invalid credentials', null);
+    }
+
+    else {
+      next(error)
+    }
   }
 };
 
-export const logoutUser = (_, res) => {
-  generateResponse(res, 200, true, 'Logged out successfully', null);
+export const logoutUser = async (req, res, next) => {
+
+  const userId = req.user._id;
+
+  try {
+    await User.findByIdAndUpdate(userId, { refreshToken: null });
+    generateResponse(res, 200, true, 'Logged out successfully', null);
+  }
+
+  catch (error) {
+    next(error);
+  }
 };
 
-export const refreshToken = (req, res) => {
+export const refreshAccessToken = async (req, res, next) => {
+  const { refreshToken } = req.body;
+
   try {
-    const { refreshTokenBody } = req.body;
-    const tokens = refreshTokenService(refreshTokenBody);
+    const tokens = await refreshAccessTokenService(refreshToken);
     generateResponse(res, 200, true, 'Token refreshed', tokens);
-  } catch (error) {
-    generateResponse(res, 401, false, 'Invalid refresh token', error.message);
+  }
+
+  catch (error) {
+    if (error.message === 'No refresh token provided') {
+      generateResponse(res, 400, false, 'No refresh token provided', null);
+    }
+
+    else if (error.message === 'Invalid refresh token') {
+      generateResponse(res, 400, false, 'Invalid refresh token', null);
+    }
+
+    else {
+      next(error)
+    }
   }
 };
 
+// export const updatePassword = async (req, res) => {
+//   try {
+//     const { email, oldPassword, newPassword } = req.body;
+//     await updatePasswordService({ email, oldPassword, newPassword });
+//     generateResponse(res, 200, true, "Password updated successfully", null);
+//   } catch (error) {
+//     generateResponse(res, 400, false, "Update password failed", error.message);
+//   }
+// };
 
+export const forgetPassword = async (req, res, next) => {
 
-export const updatePassword = async (req, res) => {
+  const { email } = req.body;
   try {
-    const { email, oldPassword, newPassword } = req.body;
-    await updatePasswordService({ email, oldPassword, newPassword });
-    generateResponse(res, 200, true, "Password updated successfully", null);
-  } catch (error) {
-    generateResponse(res, 400, false, "Update password failed", error.message);
-  }
-};
-
-
-export const forgetPassword = async (req, res) => {
-  try {
-    await forgetPasswordService(req.body.email);
+    await forgetPasswordService(email);
     generateResponse(res, 200, true, 'Verification code sent to your email', null);
-  } catch (error) {
-    generateResponse(res, 400, false, 'Forget password failed', error.message);
+  }
+
+  catch (error) {
+
+    if (error.message === 'Email is required') {
+      generateResponse(res, 400, false, 'Email is required', null);
+    }
+
+    else if (error.message === 'Invalid email') {
+      generateResponse(res, 400, false, 'Invalid email', null);
+    }
+
+    else {
+      next(error)
+    }
   }
 };
 
 
-export const verifyCode = async (req, res) => {
+export const verifyCode = async (req, res, next) => {
+  const { otp, email } = req.body;
   try {
-    const { email, verificationCode } = req.body;
-
-    await verifyCodeService({ email, verificationCode });
+    await verifyCodeService({ otp, email });
     generateResponse(res, 200, true, 'Verification successful', null);
-  } catch (error) {
-    generateResponse(res, 400, false, 'Verification failed', error.message);
+  }
+
+  catch (error) {
+    if (error.message === 'Invalid email') {
+      generateResponse(res, 400, false, 'Invalid email', null);
+    }
+
+    else if (error.message === 'Otp not found') {
+      generateResponse(res, 404, false, 'Otp not found', null);
+    }
+
+    else if (error.message === 'Invalid or expired otp') {
+      generateResponse(res, 403, false, 'Invalid or expired otp', null);
+    }
+
+    else {
+      next(error)
+    }
   }
 };
 
-export const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res, next) => {
+  const { email, newPassword } = req.body;
   try {
-    const { email, password } = req.body;
-    await resetPasswordService({ email, password });
+    await resetPasswordService({ email, newPassword });
     generateResponse(res, 200, true, 'Password reset successfully', null);
-  } catch (error) {
-    generateResponse(res, 400, false, 'Reset failed', error.message);
+  } 
+  
+  catch (error) {
+    if (error.message === 'Invalid email') {
+      generateResponse(res, 400, false, 'Invalid email', null);
+    }
+
+    else if (error.message === 'otp not cleared') {
+      generateResponse(res, 403, false, 'otp not cleared', null);
+    }
+
+    else {
+      next(error)
+    }
   }
 };
 

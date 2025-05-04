@@ -4,12 +4,6 @@ import jwt from 'jsonwebtoken';
 import { refreshTokenSecrete, emailExpires } from '../../core/config/config.js';
 import sendEmail from '../../lib/sendEmail.js';
 import verificationCodeTemplate from '../../lib/emailTemplates.js';
-import { hashPassword } from '../../lib/hashPassword.js';
-import {
-  generateAccessToken,
-  generateRefreshToken
-} from '../../lib/generateToken.js';
-
 
 
 export const registerUserService = async ({
@@ -22,14 +16,12 @@ export const registerUserService = async ({
   const existingUser = await User.findOne({ email });
   if (existingUser) throw new Error('User already registered.');
 
-  const hashedPassword = await hashPassword(password);
-
   const newUser = new User({
     firstName,
     lastName,
     phoneNumber,
     email,
-    password: hashedPassword
+    password
   });
 
   const savedUser = await newUser.save();
@@ -40,104 +32,116 @@ export const registerUserService = async ({
 
 
 export const loginUserService = async ({ email, password }) => {
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).lean()
   if (!user) throw new Error('User not found');
 
-  const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await user.comparePassword(password, user.password);
   if (!isMatch) throw new Error('Invalid credentials');
 
-  const userWithoutPassword = {
-    ...user.toObject(),
-    password: undefined,
-    createdAt: undefined,
-    updatedAt: undefined,
-    __v: undefined
-  };
+  delete user.password; 
 
-  return {
-    accessToken: generateAccessToken(userWithoutPassword),
-    refreshToken: generateRefreshToken(userWithoutPassword)
-  };
+  const payload = {
+    _id: user._id
+  }
+
+  const data = {
+    user,
+    accessToken: user.generateAccessToken(payload),
+    refreshToken: user.generateRefreshToken(payload)
+  }
+
+  return data
 };
 
-export const refreshTokenService = (refreshTokenBody) => {
-  if (!refreshTokenBody) throw new Error('No refresh token provided');
+export const refreshAccessTokenService = async (refreshToken) => {
+  if (!refreshToken) throw new Error('No refresh token provided');
 
-  const decoded = jwt.verify(refreshTokenBody, refreshTokenSecrete);
+  // Find user by refreshToken
+  const user = await User.findOne({ refreshToken });
 
-  // Destructure and exclude `exp` and `iat`
-  const { exp, iat, ...payloadWithoutExp } = decoded;
+  if (!user) throw new Error('Invalid refresh token');
 
-  return {
-    accessToken: generateAccessToken(payloadWithoutExp),
-    refreshToken: generateRefreshToken(payloadWithoutExp)
-  };
-};
+  const decoded = jwt.verify(refreshToken, refreshTokenSecrete)
 
-export const updatePasswordService = async ({ email, oldPassword, newPassword }) => {
-  const user = await User.findOne({ email });
-  if (!user) throw new Error('Invalid email');
+  if (!decoded || decoded._id !== user._id.toString()) throw new Error('Invalid refresh token')
+
+  const payload = { _id: user._id }
+
+  const accessToken = user.generateAccessToken(payload);
+  const newRefreshToken = user.generateRefreshToken(payload);
+
+  user.refreshToken = newRefreshToken;
+  await user.save({ validateBeforeSave: false })
   
-  const isMatch = await bcrypt.compare(oldPassword, user.password);
-  if (!isMatch) throw new Error('Incorrect password');
-
-  const hashedPassword = await hashPassword(newPassword);
-
-  user.password = hashedPassword;
-  await user.save();
-
-  return true;
+  return {
+    accessToken,
+    refreshToken: newRefreshToken
+  }
 };
 
+// export const updatePasswordService = async ({ email, oldPassword, newPassword }) => {
+//   const user = await User.findOne({ email });
+//   if (!user) throw new Error('Invalid email');
+  
+//   const isMatch = await bcrypt.compare(oldPassword, user.password);
+//   if (!isMatch) throw new Error('Incorrect password');
 
+//   const hashedPassword = await hashPassword(newPassword);
+
+//   user.password = hashedPassword;
+//   await user.save();
+
+//   return true;
+// };
 
 export const forgetPasswordService = async (email) => {
+
+  if (!email) throw new Error('Email is required')
+
   const user = await User.findOne({ email });
   if (!user) throw new Error('Invalid email');
 
-  const verificationCode = Math.floor(100000 + Math.random() * 900000);
-  const expiresIn = new Date(Date.now() + emailExpires);
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  const otpExpires = new Date(Date.now() + emailExpires);
 
-  user.verificationCode = verificationCode;
-  user.verificationCodeExpires = expiresIn;
-  await user.save();
+  user.otp = otp;
+  user.otpExpires = otpExpires;
+  await user.save({ validateBeforeSave: false });
 
   await sendEmail({
     to: email,
-    subject: 'Verification Code',
-    html: verificationCodeTemplate(verificationCode)
+    subject: 'Password Reset OTP',
+    html: verificationCodeTemplate(otp)
   });
 
-  return true;
+  return;
 };
 
-export const verifyCodeService = async ({ email, verificationCode }) => {
+export const verifyCodeService = async ({ email, otp }) => {
+
   const user = await User.findOne({ email });
+
   if (!user) throw new Error('Invalid email');
-  if (!user.verificationCode || !user.verificationCodeExpires)
-    throw new Error('Verification code not found');
-  if (new Date() > user.verificationCodeExpires)
-    throw new Error('Verification code expired');
-  if (parseInt(user.verificationCode) !== parseInt(verificationCode))
-    throw new Error('Incorrect code');
 
-  user.verificationCode = null;
-  user.verificationCodeExpires = null;
-  await user.save();
+  if (!user.otp || !user.otpExpires) throw new Error('Otp not found');
 
-  return true;
+  if (user.otp !== otp || new Date() > user.otpExpires) throw new Error('Invalid or expired otp')
+
+  user.otp = null;
+  user.otpExpires = null;
+  await user.save({ validateBeforeSave: false });
+
+  return;
 };
 
-export const resetPasswordService = async ({ email, password }) => {
+export const resetPasswordService = async ({ email, newPassword }) => {
   const user = await User.findOne({ email });
   if (!user) throw new Error('Invalid email');
-  if (user.verificationCode || user.verificationCodeExpires)
-    throw new Error('Verification code not cleared');
 
-  const hashedPassword = await hashPassword(password);
+  if (user.otp || user.otpExpires) throw new Error('otp not cleared');
 
-  user.password = hashedPassword;
+  user.password = newPassword;
   await user.save();
 
-  return true;
+  return;
 };
