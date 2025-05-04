@@ -12,7 +12,7 @@ const router = express.Router();
 router.use('/v1/auth', authRoutes);
 router.use('/v1/user', userRoutes);
 
-router.use('/v1/categories',categoryRoutes);
+router.use('/v1/categories', categoryRoutes);
 router.use("/v1/subcategories", subCategoryRoutes);
 router.use('/v1/resources', resourceRoutes);
 router.use('/v1/blogs', blogRoutes);
