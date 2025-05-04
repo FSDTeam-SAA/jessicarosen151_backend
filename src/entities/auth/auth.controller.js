@@ -59,7 +59,6 @@ export const loginUser = async (req, res, next) => {
 export const logoutUser = async (req, res, next) => {
 
   const userId = req.user._id;
-
   try {
     await User.findByIdAndUpdate(userId, { refreshToken: null });
     generateResponse(res, 200, true, 'Logged out successfully', null);

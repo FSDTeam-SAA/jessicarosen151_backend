@@ -37,11 +37,15 @@ export const loginUserService = async ({ email, password }) => {
 
   const payload = { _id: user._id };
 
-  return {
+  const data = {
     user,
-    accessToken: user.generateAccessToken(payload),
-    refreshToken: user.generateRefreshToken(payload),
+    accessToken: user.generateAccessToken(payload)
   };
+
+  user.refreshToken = user.generateRefreshToken(payload);
+  await user.save({ validateBeforeSave: false });
+
+  return data
 };
 
 export const refreshAccessTokenService = async (refreshToken) => {
