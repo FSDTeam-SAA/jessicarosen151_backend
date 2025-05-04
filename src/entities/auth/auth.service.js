@@ -21,15 +21,18 @@ export const registerUserService = async ({
     password
   });
 
-  await newUser.save();
-  return;
+  const user = await newUser.save();
+
+  const { _id, role, profileImage } = user;
+  return { _id, firstName, lastName, email, role, profileImage };
 };
 
 
 export const loginUserService = async ({ email, password }) => {
   if (!email || !password) throw new Error('Email and password are required');
 
-  const user = await User.findOne({ email }).select("-password");
+  const user = await User.findOne({ email }).select("_id firstName lastName email role profileImage");
+
   if (!user) throw new Error('User not found');
 
   const isMatch = await user.comparePassword(user._id, password);
@@ -51,7 +54,6 @@ export const loginUserService = async ({ email, password }) => {
 export const refreshAccessTokenService = async (refreshToken) => {
   if (!refreshToken) throw new Error('No refresh token provided');
 
-  // Find user by refreshToken
   const user = await User.findOne({ refreshToken });
 
   if (!user) throw new Error('Invalid refresh token');
@@ -73,21 +75,6 @@ export const refreshAccessTokenService = async (refreshToken) => {
     refreshToken: newRefreshToken
   }
 };
-
-// export const updatePasswordService = async ({ email, oldPassword, newPassword }) => {
-//   const user = await User.findOne({ email });
-//   if (!user) throw new Error('Invalid email');
-
-//   const isMatch = await bcrypt.compare(oldPassword, user.password);
-//   if (!isMatch) throw new Error('Incorrect password');
-
-//   const hashedPassword = await hashPassword(newPassword);
-
-//   user.password = hashedPassword;
-//   await user.save();
-
-//   return true;
-// };
 
 export const forgetPasswordService = async (email) => {
 
@@ -114,6 +101,8 @@ export const forgetPasswordService = async (email) => {
 
 export const verifyCodeService = async ({ email, otp }) => {
 
+  if (!email || !otp) throw new Error('Email and otp are required')
+
   const user = await User.findOne({ email });
 
   if (!user) throw new Error('Invalid email');
@@ -130,6 +119,8 @@ export const verifyCodeService = async ({ email, otp }) => {
 };
 
 export const resetPasswordService = async ({ email, newPassword }) => {
+  if (!email || !newPassword) throw new Error('Email and new password are required');
+
   const user = await User.findOne({ email });
   if (!user) throw new Error('Invalid email');
 
