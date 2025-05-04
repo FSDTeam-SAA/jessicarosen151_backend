@@ -16,7 +16,7 @@ const UserSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    phoneNumber: { type: String, required: true },
+    phoneNumber: { type: String, default: '' },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: {
@@ -65,9 +65,10 @@ UserSchema.pre("save", async function (next) {
 });
 
 // Password comparison method (bcrypt)
-UserSchema.methods.comparePassword = async function (plainPassword, hashedPassword) {
+UserSchema.methods.comparePassword = async function (_id, password) {
+  const {password: hashedPassword} = await User.findById(_id).select('password')
 
-  const isMatched = await bcrypt.compare(plainPassword, hashedPassword)
+  const isMatched = await bcrypt.compare(password, hashedPassword)
 
   return isMatched
 }

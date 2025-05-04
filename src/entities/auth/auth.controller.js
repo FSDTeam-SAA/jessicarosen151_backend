@@ -10,10 +10,10 @@ import {
 } from './auth.service.js';
 
 export const registerUser = async (req, res, next) => {
+  const { firstName, lastName, email, password } = req.body;
   try {
-    const { firstName, lastName, phoneNumber, email, password } = req.body;
 
-    await registerUserService({ firstName, lastName, phoneNumber, email, password });
+    await registerUserService({ firstName, lastName, email, password });
     generateResponse(res, 201, true, 'Registered user successfully!', null);
   }
 
@@ -23,23 +23,14 @@ export const registerUser = async (req, res, next) => {
       generateResponse(res, 400, false, 'User already registered', null);
     }
 
-    else if (error.message === 'Registration failed') {
-      generateResponse(res, 400, false, 'Registration failed', null);
-    }
-
     else {
       next(error)
     }
   }
 };
 
-
 export const loginUser = async (req, res, next) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return generateResponse(res, 400, false, 'Email and password are required', null);
-  }
 
   try {
     const data = await loginUserService({ email, password })
@@ -47,12 +38,16 @@ export const loginUser = async (req, res, next) => {
   }
 
   catch (error) {
-    if (error.message === 'User not found') {
+    if (error.message === 'Email and password are required') {
+      generateResponse(res, 400, false, 'Email and password are required', null);
+    }
+
+    else if (error.message === 'User not found') {
       generateResponse(res, 404, false, 'User not found', null);
     }
 
-    else if (error.message === 'Invalid credentials') {
-      generateResponse(res, 400, false, 'Invalid credentials', null);
+    else if (error.message === 'Invalid password') {
+      generateResponse(res, 400, false, 'Invalid password', null);
     }
 
     else {
