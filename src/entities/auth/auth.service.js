@@ -1,5 +1,4 @@
 import User from './auth.model.js';
-import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { refreshTokenSecrete, emailExpires } from '../../core/config/config.js';
 import sendEmail from '../../lib/sendEmail.js';
@@ -38,7 +37,7 @@ export const loginUserService = async ({ email, password }) => {
   const isMatch = await user.comparePassword(password, user.password);
   if (!isMatch) throw new Error('Invalid credentials');
 
-  delete user.password; 
+  delete user.password;
 
   const payload = {
     _id: user._id
@@ -72,7 +71,7 @@ export const refreshAccessTokenService = async (refreshToken) => {
 
   user.refreshToken = newRefreshToken;
   await user.save({ validateBeforeSave: false })
-  
+
   return {
     accessToken,
     refreshToken: newRefreshToken
@@ -82,7 +81,7 @@ export const refreshAccessTokenService = async (refreshToken) => {
 // export const updatePasswordService = async ({ email, oldPassword, newPassword }) => {
 //   const user = await User.findOne({ email });
 //   if (!user) throw new Error('Invalid email');
-  
+
 //   const isMatch = await bcrypt.compare(oldPassword, user.password);
 //   if (!isMatch) throw new Error('Incorrect password');
 

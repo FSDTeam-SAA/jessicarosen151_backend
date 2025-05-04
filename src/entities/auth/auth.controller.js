@@ -6,8 +6,7 @@ import {
   refreshAccessTokenService,
   forgetPasswordService,
   verifyCodeService,
-  resetPasswordService,
-  updatePasswordService
+  resetPasswordService
 } from './auth.service.js';
 
 
@@ -167,8 +166,8 @@ export const resetPassword = async (req, res, next) => {
   try {
     await resetPasswordService({ email, newPassword });
     generateResponse(res, 200, true, 'Password reset successfully', null);
-  } 
-  
+  }
+
   catch (error) {
     if (error.message === 'Invalid email') {
       generateResponse(res, 400, false, 'Invalid email', null);
