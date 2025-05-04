@@ -9,8 +9,6 @@ import {
   resetPasswordService
 } from './auth.service.js';
 
-
-
 export const registerUser = async (req, res, next) => {
   try {
     const { firstName, lastName, phoneNumber, email, password } = req.body;
