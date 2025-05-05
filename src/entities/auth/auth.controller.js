@@ -9,6 +9,7 @@ import {
   resetPasswordService
 } from './auth.service.js';
 
+
 export const registerUser = async (req, res, next) => {
   const { firstName, lastName, email, password } = req.body;
   try {
@@ -28,6 +29,7 @@ export const registerUser = async (req, res, next) => {
     }
   }
 };
+
 
 export const loginUser = async (req, res, next) => {
   const { email, password } = req.body;
@@ -57,6 +59,7 @@ export const loginUser = async (req, res, next) => {
   }
 };
 
+
 export const logoutUser = async (req, res, next) => {
 
   const userId = req.user._id;
@@ -69,6 +72,7 @@ export const logoutUser = async (req, res, next) => {
     next(error);
   }
 };
+
 
 export const refreshAccessToken = async (req, res, next) => {
   const { refreshToken } = req.body;
@@ -92,6 +96,7 @@ export const refreshAccessToken = async (req, res, next) => {
     }
   }
 };
+
 
 export const forgetPassword = async (req, res, next) => {
 
