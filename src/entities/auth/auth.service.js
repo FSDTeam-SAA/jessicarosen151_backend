@@ -37,12 +37,12 @@ export const loginUserService = async ({ email, password }) => {
 
   const isMatch = await user.comparePassword(user._id, password);
   if (!isMatch) throw new Error('Invalid password');
-
-  const payload = { _id: user._id };
-
+  
+  const payload = { _id: user._id , role: user.role };
+  
   const data = {
     user,
-    accessToken: user.generateAccessToken(payload)
+    accessToken: user.generateAccessToken(payload),
   };
 
   user.refreshToken = user.generateRefreshToken(payload);
@@ -50,6 +50,7 @@ export const loginUserService = async ({ email, password }) => {
 
   return data
 };
+
 
 export const refreshAccessTokenService = async (refreshToken) => {
   if (!refreshToken) throw new Error('No refresh token provided');
@@ -62,7 +63,7 @@ export const refreshAccessTokenService = async (refreshToken) => {
 
   if (!decoded || decoded._id !== user._id.toString()) throw new Error('Invalid refresh token')
 
-  const payload = { _id: user._id }
+  const payload = { _id: user._id , role: user.role }
 
   const accessToken = user.generateAccessToken(payload);
   const newRefreshToken = user.generateRefreshToken(payload);
@@ -75,6 +76,7 @@ export const refreshAccessTokenService = async (refreshToken) => {
     refreshToken: newRefreshToken
   }
 };
+
 
 export const forgetPasswordService = async (email) => {
 
@@ -99,6 +101,7 @@ export const forgetPasswordService = async (email) => {
   return;
 };
 
+
 export const verifyCodeService = async ({ email, otp }) => {
 
   if (!email || !otp) throw new Error('Email and otp are required')
@@ -117,6 +120,7 @@ export const verifyCodeService = async ({ email, otp }) => {
 
   return;
 };
+
 
 export const resetPasswordService = async ({ email, newPassword }) => {
   if (!email || !newPassword) throw new Error('Email and new password are required');
