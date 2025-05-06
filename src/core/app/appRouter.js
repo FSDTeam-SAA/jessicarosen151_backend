@@ -6,6 +6,7 @@ import subCategoryRoutes from '../../entities/sub_category/sub_category.routes.j
 import resourceRoutes from '../../entities/resource/resource.routes.js';
 import blogRoutes from '../../entities/blog/blog.routes.js';
 import promoRoutes from '../../entities/promo_code/promo.routes.js';
+import contactRoutes from '../../entities/contact/contact.routes.js';
 
 const router = express.Router();
 
@@ -18,6 +19,8 @@ router.use("/v1/subcategories", subCategoryRoutes);
 router.use('/v1/resources', resourceRoutes);
 router.use('/v1/blogs', blogRoutes);
 router.use('/v1/promo-codes', promoRoutes); 
+router.use('/v1/contact', contactRoutes)
+
 
 
 export default router;
