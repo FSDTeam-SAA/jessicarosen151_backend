@@ -25,3 +25,5 @@ export const cloudinaryUpload = async (filePath, public_id, folder) => {
     return "file upload failed";
   }
 };
+
+export default cloudinary
