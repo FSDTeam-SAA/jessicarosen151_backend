@@ -14,7 +14,8 @@ import { cloudinaryUpload } from "../../lib/cloudinaryUpload.js";
 export const createResource = async (req, res) => {
   try {
     const createdBy = req.user._id;
-    const { title, description, price, discountPrice, quantity, category, subCategory } = req.body;
+    const { title, description, price, discountPrice, quantity, category, subCategory , practiceAreas } = req.body;
+    console.log(practiceAreas);
 
     const thumbnailFile = req.files?.thumbnail?.[0];
     const formatFile = req.files?.format?.[0];
@@ -53,7 +54,8 @@ export const createResource = async (req, res) => {
       thumbnail: thumbnail,
       formatUrl,
       createdBy,
-      status
+      status,
+      practiceAreas
     });
 
     generateResponse(res, 201, true, "Resource created successfully", resource);
