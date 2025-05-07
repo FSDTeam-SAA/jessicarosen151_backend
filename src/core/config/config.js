@@ -5,6 +5,7 @@ dotenv.config();
 export const port = process.env.PORT || 5000;
 export const mongoURI = process.env.MONGO_URI;
 export const env = process.env.NODE_ENV || 'development';
+
 // JWT config 
 export const jwtSecret = process.env.JWT_SECRET;
 export const jwtExpire = process.env.JWT_EXPIRE || '1h';
@@ -13,6 +14,7 @@ export const accessTokenExpires = process.env.ACCESS_TOKEN_EXPIRES || '7d';
 export const refreshTokenExpires = process.env.REFRESH_TOKEN_EXPIRES || '10d';
 export const refreshTokenSecrete = process.env.REFRESH_TOKEN_SECRET;
 export const salt = process.env.SALT;
+
 // EMAIL config 
 export const emailExpires = parseInt(process.env.EMAIL_EXPIRES || 15 * 60 * 1000);
 export const emailHost = process.env.EMAIL_HOST;
