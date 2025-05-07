@@ -11,7 +11,7 @@ import { adminMiddleware, verifyToken } from "../../core/middlewares/authMiddlew
 const router = express.Router();
 
 // Public
-router.get("/", getAllSubCategories);
+router.get("/:categoryId", getAllSubCategories);
 router.get("/:id", getSubCategoryById);
 
 // Admin protected

@@ -1,12 +1,11 @@
 import {
-    createCategoryService,
-    getAllCategoriesService,
-    getCategoryByIdService,
-    updateCategoryService,
-    deleteCategoryService
+  createCategoryService,
+  getAllCategoriesService,
+  getCategoryByIdService,
+  updateCategoryService,
+  deleteCategoryService
 } from './category.service.js';
-import {generateResponse} from '../../lib/responseFormate.js';
-
+import { generateResponse } from '../../lib/responseFormate.js';
 
 
 export const createCategory = async (req, res) => {
@@ -23,10 +22,20 @@ export const createCategory = async (req, res) => {
 
 
 export const getAllCategories = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
   try {
-    const categories = await getAllCategoriesService();
-    generateResponse(res, 200, true, 'Fetched categories', categories);
-  } catch (error) {
+    const { data, pagination } = await getAllCategoriesService(page, limit, skip);
+    return res.status(200).json({
+      success: true,
+      message: 'Fetched categories',
+      data,
+      pagination
+    });
+  }
+
+  catch (error) {
     generateResponse(res, 500, false, 'Failed to fetch categories', error.message);
   }
 };
@@ -62,4 +71,3 @@ export const deleteCategory = async (req, res) => {
     generateResponse(res, 400, false, 'Failed to delete category', error.message);
   }
 };
-  

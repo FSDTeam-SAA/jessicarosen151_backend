@@ -1,12 +1,12 @@
 import {
-    createSubCategoryService,
-    getAllSubCategoriesService,
-    getSubCategoryByIdService,
-    updateSubCategoryService,
-    deleteSubCategoryService
+  createSubCategoryService,
+  getAllSubCategoriesService,
+  getSubCategoryByIdService,
+  updateSubCategoryService,
+  deleteSubCategoryService
 } from "./sub_category.service.js";
 import { generateResponse } from "../../lib/responseFormate.js";
-  
+
 
 
 export const createSubCategory = async (req, res) => {
@@ -21,10 +21,21 @@ export const createSubCategory = async (req, res) => {
 
 
 export const getAllSubCategories = async (req, res) => {
+  const { categoryId } = req.params;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
   try {
-    const subCategories = await getAllSubCategoriesService();
-    generateResponse(res, 200, true, "Fetched sub-categories", subCategories);
-  } catch (error) {
+    const { data, pagination } = await getAllSubCategoriesService(categoryId, page, limit, skip);
+    return res.status(200).json({
+      success: true,
+      message: 'Fetched sub categories',
+      data,
+      pagination
+    });
+  }
+
+  catch (error) {
     generateResponse(res, 500, false, "Failed to fetch sub-categories", error.message);
   }
 };
@@ -60,4 +71,3 @@ export const deleteSubCategory = async (req, res) => {
     generateResponse(res, 400, false, "Failed to delete sub-category", error.message);
   }
 };
-  
