@@ -7,7 +7,7 @@ import {
     updatePromoCode,
 } from "./promo.controller.js";
 
-import { adminMiddleware } from "../../core/middlewares/authMiddleware.js";
+import { adminMiddleware, verifyToken } from "../../core/middlewares/authMiddleware.js";
 
 
 const router = express.Router();
@@ -17,8 +17,8 @@ router.get("/", getAllPromoCodes);
 router.get("/:id", getPromoCodeById);
 
 // Admin protected
-router.post("/", adminMiddleware, createPromoCode);
-router.put("/:id", adminMiddleware, updatePromoCode);
-router.delete("/:id", adminMiddleware, deletePromoCode);
+router.post("/", verifyToken, adminMiddleware, createPromoCode);
+router.put("/:id", verifyToken, adminMiddleware, updatePromoCode);
+router.delete("/:id",verifyToken, adminMiddleware, deletePromoCode);
 
 export default router;

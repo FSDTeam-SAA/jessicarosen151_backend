@@ -19,6 +19,14 @@ const UserSchema = new mongoose.Schema(
     phoneNumber: { type: String, default: '' },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    username: { type: String, unique: true, default: '' },
+    dob: { type: Date, default: null },
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other'],
+      default: 'male'
+    },
+
     role: {
       type: String,
       default: RoleType.USER,
