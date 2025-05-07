@@ -10,9 +10,21 @@ export const createPromoCodeService = async (data) => {
 };
 
 
-export const getAllPromoCodesService = async () => {
-  return await PromoCode.find().populate("createdBy", "firstName lastName email");
+export const getAllPromoCodesService = async (filter, page, limit) => {
+  const skip = (page - 1) * limit;
+
+  const [data, totalData] = await Promise.all([
+    PromoCode.find(filter)
+      .populate("createdBy", "firstName lastName email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    PromoCode.countDocuments(filter)
+  ]);
+
+  return { data, totalData };
 };
+
 
 
 export const getPromoCodeByIdService = async (id) => {
