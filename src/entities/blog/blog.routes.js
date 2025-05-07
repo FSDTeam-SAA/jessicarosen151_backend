@@ -6,7 +6,7 @@ import {
   updateBlog,
   deleteBlog
 } from "./blog.controller.js";
-import { adminMiddleware } from "../../core/middlewares/authMiddleware.js";
+import { adminMiddleware, verifyToken } from "../../core/middlewares/authMiddleware.js";
 import { multerUpload } from "../../core/middlewares/multer.js";
 
 
@@ -19,11 +19,12 @@ router.get("/:id", getBlogById);
 // Admin protected
 router.post(
   "/",
+  verifyToken,
   adminMiddleware,
   multerUpload([{ name: "thumbnail", maxCount: 1 }]),
   createBlog
 );
-router.put("/:id", adminMiddleware, updateBlog);
-router.delete("/:id", adminMiddleware, deleteBlog);
+router.put("/:id", verifyToken, adminMiddleware, updateBlog);
+router.delete("/:id", verifyToken, adminMiddleware, deleteBlog);
 
 export default router;
