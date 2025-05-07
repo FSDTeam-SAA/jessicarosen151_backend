@@ -48,12 +48,35 @@ const resourceSchema = new Schema(
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending"
+    },
+    productId: {
+      type: String,
+      unique: true,
+      required: true
     }
   },
   {
     timestamps: true
   }
 );
+
+// Generate random 5-digits Product ID
+resourceSchema.pre("validate", async function (next) {
+  if (!this.productId) {
+    let isUnique = false;
+    let generatedId;
+
+    while (!isUnique) {
+      generatedId = Math.floor(10000 + Math.random() * 90000).toString();
+      const existing = await mongoose.models.Resource.findOne({ productId: generatedId });
+      if (!existing) isUnique = true;
+    }
+
+    this.productId = generatedId;
+  }
+
+  next();
+});
 
 const Resource = mongoose.model("Resource", resourceSchema);
 export default Resource;
