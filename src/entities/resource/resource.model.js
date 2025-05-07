@@ -53,6 +53,24 @@ const resourceSchema = new Schema(
       type: String,
       unique: true,
       required: true
+    },
+    practiceAreas: {
+      type: [String],
+      enum: [
+        "Employment",
+        "Corporate and M&A",
+        "Litigation",
+        "Legal Operations",
+        "Professional Development",
+        "Commercial Transactions",
+        "Commercial Real Estate",
+        "Finance",
+        "Estates Law",
+        "Wills Law",
+        "Corporate Law"
+      ],
+      required: true,
+      default: []
     }
   },
   {
