@@ -6,7 +6,7 @@ import {
   updateSubCategory,
   deleteSubCategory
 } from "./sub_category.controller.js";
-import { adminMiddleware } from "../../core/middlewares/authMiddleware.js";
+import { adminMiddleware, verifyToken } from "../../core/middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -15,8 +15,8 @@ router.get("/", getAllSubCategories);
 router.get("/:id", getSubCategoryById);
 
 // Admin protected
-router.post("/", adminMiddleware, createSubCategory);
-router.put("/:id", adminMiddleware, updateSubCategory);
-router.delete("/:id", adminMiddleware, deleteSubCategory);
+router.post("/", verifyToken, adminMiddleware, createSubCategory);
+router.put("/:id", verifyToken, adminMiddleware, updateSubCategory);
+router.delete("/:id", verifyToken, adminMiddleware, deleteSubCategory);
 
 export default router;
