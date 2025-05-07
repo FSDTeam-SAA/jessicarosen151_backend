@@ -60,7 +60,7 @@ const resourceSchema = new Schema(
   }
 );
 
-// Generate random 5-digit Product ID
+// Generate random 5-digits Product ID
 resourceSchema.pre("validate", async function (next) {
   if (!this.productId) {
     let isUnique = false;
