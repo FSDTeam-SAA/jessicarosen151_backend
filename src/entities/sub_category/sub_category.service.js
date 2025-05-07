@@ -8,9 +8,29 @@ export const createSubCategoryService = async ({ name, description, category }) 
   return await subCategory.save();
 };
 
-export const getAllSubCategoriesService = async () => {
-  return await SubCategory.find().populate("category", "name");
-};
+export const getAllSubCategoriesService = async (categoryId, page, limit, skip) => {
+  const subCategories = (
+    await SubCategory
+    .find({ category: categoryId })
+    .populate("category", "name")
+    .sort({ createdAt: -1 })
+    .lean()
+  )
+
+  const totalItems = subCategories.length;
+  const totalPages = Math.ceil(totalItems / limit);
+
+  const paginatedCategories = subCategories.slice(skip, skip + limit);
+  return {
+    data: paginatedCategories,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalItems,
+      itemsPerPage: limit
+    }
+  }
+}
 
 export const getSubCategoryByIdService = async (id) => {
   return await SubCategory.findById(id).populate("category", "name");
