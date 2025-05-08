@@ -6,11 +6,50 @@ export const createResourceService = async (data) => {
 };
 
 
-export const getAllResourcesService = async () => {
-  return await Resource.find()
-    .populate("category", "name")
-    .populate("subCategory", "name")
-    .populate("createdBy", "firstName lastName email role");
+export const getAllResourcesService = async (page, limit, skip, status, sellerId, categoryName, price, practiceAreas, search) => {
+
+  const query = sellerId ? { createdBy: sellerId } : {};
+  if (status) query.status = status;
+  if (price) query.price = { $gte: price[0], $lte: price[1] }
+  if (practiceAreas) query.practiceAreas = { $all: practiceAreas };
+
+  const resources = (
+    await Resource.find(query)
+      .populate("category", "name description")
+      .populate("subCategory", "name description")
+      .populate("createdBy", "firstName lastName email role")
+      .sort({ createdAt: -1 })
+      .lean()
+  )
+
+  const filteredResources = resources.filter((resource) => {
+    const title = resource.title.toLowerCase();
+    const description = resource.description.toLowerCase();
+    const categoryNameLocal = resource.category.name.toLowerCase();
+    const subCategoryName = resource.subCategory.name.toLowerCase()
+    const practiceAreas = resource.practiceAreas.map(area => area.toLowerCase());
+
+    const matchedSearch = search ? title.includes(search) || description.includes(search) || categoryNameLocal.includes(search) || subCategoryName.includes(search) || practiceAreas.some(area => area.includes(search)) : true;
+
+    const matchedCategoryName = categoryName ? categoryNameLocal.includes(categoryName) : true;
+
+    return matchedSearch && matchedCategoryName;
+  })
+
+  const totalItems = filteredResources.length;
+  const totalPages = Math.ceil(totalItems / limit);
+
+  const paginatedResources = filteredResources.slice(skip, skip + limit);
+
+  return {
+    data: paginatedResources,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalItems,
+      itemsPerPage: limit
+    }
+  }
 };
 
 
@@ -54,7 +93,7 @@ export const updateResourceService = async (id, updateData, user) => {
   throw new Error("Unauthorized role");
 };
 
-  
+
 export const deleteResourceService = async (id, user) => {
   const resource = await Resource.findById(id);
   if (!resource) throw new Error("Resource not found or already deleted");
@@ -82,9 +121,9 @@ export const deleteResourceService = async (id, user) => {
 export const getSellerResourcesService = async (sellerId) => {
   try {
     const resources = await Resource.find({ createdBy: sellerId })
-      .populate("category", "name")       
-      .populate("subCategory", "name")    
-      .sort({ createdAt: -1 });          
+      .populate("category", "name")
+      .populate("subCategory", "name")
+      .sort({ createdAt: -1 });
 
     return resources;
   } catch (error) {
