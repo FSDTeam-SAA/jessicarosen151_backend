@@ -15,6 +15,7 @@ export const getAllCategoriesService = async (page, limit, skip) => {
       .find({})
       .populate('createdBy', 'firstName lastName email')
       .sort({ createdAt: -1 })
+      .select('-__v -updatedAt')
       .lean()
   )
 
