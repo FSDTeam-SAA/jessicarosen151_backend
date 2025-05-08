@@ -11,10 +11,11 @@ export const createSubCategoryService = async ({ name, description, category }) 
 export const getAllSubCategoriesService = async (categoryId, page, limit, skip) => {
   const subCategories = (
     await SubCategory
-    .find({ category: categoryId })
-    .populate("category", "name")
-    .sort({ createdAt: -1 })
-    .lean()
+      .find({ category: categoryId })
+      .populate("category", "name")
+      .sort({ createdAt: -1 })
+      .select("-__v -updatedAt")
+      .lean()
   )
 
   const totalItems = subCategories.length;
