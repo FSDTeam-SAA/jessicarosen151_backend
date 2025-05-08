@@ -69,7 +69,6 @@ const resourceSchema = new Schema(
         "Wills Law",
         "Corporate Law"
       ],
-      required: true,
       default: []
     }
   },
