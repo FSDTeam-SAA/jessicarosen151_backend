@@ -14,7 +14,7 @@ import { cloudinaryUpload } from "../../lib/cloudinaryUpload.js";
 export const createResource = async (req, res) => {
   try {
     const createdBy = req.user._id;
-    const { title, description, price, discountPrice, quantity, category, subCategory , practiceAreas } = req.body;
+    const { title, description, price, discountPrice, quantity, category, subCategory, practiceAreas } = req.body;
     console.log(practiceAreas);
 
     const thumbnailFile = req.files?.thumbnail?.[0];
@@ -28,17 +28,17 @@ export const createResource = async (req, res) => {
       if (result?.secure_url) thumbnail = result.secure_url;
     }
     console.log(formatFile);
-    
+
     if (formatFile) {
       const result = await cloudinaryUpload(formatFile.path, `doc_${Date.now()}`, "resources/formats");
-        console.log(result);
+      console.log(result);
       if (result?.secure_url) formatUrl = result.secure_url;
     }
 
     // status handling
     let status = "pending";
-    if(req.user.role == "ADMIN"){
-        status = "approved";
+    if (req.user.role == "ADMIN") {
+      status = "approved";
     }
 
 
@@ -65,14 +65,31 @@ export const createResource = async (req, res) => {
 };
 
 
-export const getAllResources = async (req, res) => {
+export const getAllResources = async (req, res, next) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+  const status = req.query.status ? req.query.status.toLowerCase() : null;
+  const sellerId = req.query.sellerId;
+  const categoryName = req.query.categoryName ? req.query.categoryName.toLowerCase() : null;
+  const price = req.query.price ? req.query.price.map(Number) : null;
+  const practiceAreas = req.query.practiceAreas;
+  const search = req.query.search ? req.query.search.toLowerCase() : null;
+
   try {
-    const resources = await getAllResourcesService();
-    generateResponse(res, 200, true, "Fetched resources", resources);
-  } catch (error) {
-    generateResponse(res, 500, false, "Failed to fetch resources", error.message);
+    const { data, pagination } = await getAllResourcesService(page, limit, skip, status, sellerId, categoryName, price, practiceAreas, search);
+    return res.status(200).json({
+      success: true,
+      message: 'Fetched resources',
+      data,
+      pagination
+    });
   }
-};
+
+  catch (error) {
+    next(error)
+  }
+}
 
 
 export const getResourceById = async (req, res) => {
