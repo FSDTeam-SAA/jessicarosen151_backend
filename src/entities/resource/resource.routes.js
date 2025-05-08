@@ -1,12 +1,12 @@
 import express from "express";
 import { createResource, getAllResources, getResourceById, updateResource, deleteResource, getSellerResources } from "./resource.controller.js";
-import { adminSellerMiddleware , sellerMiddleware, verifyToken } from "../../core/middlewares/authMiddleware.js";
+import { adminSellerMiddleware, sellerMiddleware, verifyToken } from "../../core/middlewares/authMiddleware.js";
 import { multerUpload } from "../../core/middlewares/multer.js";
 
 const router = express.Router();
 
 // Public
-router.get("/", getAllResources);
+router.get("/get-all-resources", getAllResources);
 router.get("/:id", getResourceById);
 
 
@@ -22,9 +22,8 @@ router.post(
   createResource
 );
 
-router.put("/:id", verifyToken, adminSellerMiddleware , updateResource);
+router.put("/:id", verifyToken, adminSellerMiddleware, updateResource);
 router.delete("/:id", verifyToken, adminSellerMiddleware, deleteResource);
-
 
 // Seller protected
 router.get("/seller/my-resources", verifyToken, sellerMiddleware, getSellerResources);
