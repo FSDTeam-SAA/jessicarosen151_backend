@@ -8,6 +8,7 @@ import blogRoutes from '../../entities/blog/blog.routes.js';
 import promoRoutes from '../../entities/promo_code/promo.routes.js';
 import contactRoutes from '../../entities/contact/contact.routes.js';
 import messageRoutes from '../../entities/message/message.routes.js';
+import cartRoutes from '../../entities/cart/cart.routes.js';
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.use('/v1/blogs', blogRoutes);
 router.use('/v1/promo-codes', promoRoutes); 
 router.use('/v1/contact', contactRoutes)
 router.use('/v1/message', messageRoutes);
+router.use('/v1/cart', cartRoutes);
 
 
 
