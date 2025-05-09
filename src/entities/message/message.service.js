@@ -33,7 +33,6 @@ export const getMessagesByResourceService = async (resourceId,userId) => {
     let updated = false;
     messages.messages.forEach(msg => {
       if (!msg.read && msg.sender._id.toString() !== userId.toString()) {
-          console.log("hell")
         msg.read = true;
         updated = true;
       }
