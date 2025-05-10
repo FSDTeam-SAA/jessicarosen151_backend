@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+import Review from "../review/review.model.js";
 import Resource from "./resource.model.js";
 
 export const createResourceService = async (data) => {
@@ -50,10 +52,25 @@ export const getAllResourcesService = async (page, limit, skip, status, sellerId
     return matchedSearch && matchedCategoryName;
   })
 
-  const totalItems = filteredResources.length;
+  const modifiedResources = await Promise.all(filteredResources.map(async (resource) => {
+    const averageRating = await Review.aggregate([
+      { $match: { resourceId: new mongoose.Types.ObjectId(resource._id) } },
+      {
+        $group: {
+          _id: "$resourceId",
+          averageRating: { $avg: "$rating" }
+        }
+      }
+    ])
+    resource.averageRating = averageRating
+
+    return resource;
+  }))
+
+  const totalItems = modifiedResources.length;
   const totalPages = Math.ceil(totalItems / limit);
 
-  const paginatedResources = filteredResources.slice(skip, skip + limit);
+  const paginatedResources = modifiedResources.slice(skip, skip + limit);
 
   return {
     data: paginatedResources,
