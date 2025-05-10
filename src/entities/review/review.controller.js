@@ -10,16 +10,16 @@ export const createReview = async (req, res, next) => {
             rating,
             comment
         });
-        generateResponse(res, 201, "Review created successfully", null);
+        generateResponse(res, 201, true, "Review created successfully", null);
     }
 
     catch (error) {
         if (error.message === "All fields are required") {
-            generateResponse(res, 400, error.message, null);
+            generateResponse(res, 400, false, error.message, null);
         }
 
         else if (error.message === "Rating must be between 0 and 5") {
-            generateResponse(res, 400, error.message, null);
+            generateResponse(res, 400, false, error.message, null);
         }
 
         else {
@@ -30,14 +30,17 @@ export const createReview = async (req, res, next) => {
 
 export const getAllReviewsOfResource = async (req, res, next) => {
     const { resourceId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
     try {
-        const reviews = await getAllReviewsOfProductService(resourceId);
-        generateResponse(res, 200, "Reviews fetched successfully", reviews);
+        const reviews = await getAllReviewsOfProductService(resourceId, page, limit, skip)
+        generateResponse(res, 200, true, "Reviews fetched successfully", reviews);
     }
 
     catch (error) {
         if (error.message === "Resource ID is required") {
-            generateResponse(res, 400, error.message, null);
+            generateResponse(res, 400, false, error.message, null);
         }
 
         else {
