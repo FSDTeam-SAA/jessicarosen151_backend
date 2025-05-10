@@ -6,11 +6,11 @@ export const createResourceService = async (data) => {
 };
 
 
-export const getAllResourcesService = async (page, limit, skip, status, sellerId, categoryName, price, practiceAreas, format, search) => {
+export const getAllResourcesService = async (page, limit, skip, status, sellerId, categoryName, price, practiceAreas, formatType, search) => {
 
   const query = sellerId ? { createdBy: sellerId } : {};
   if (status) query.status = new RegExp(`^${status}$`, 'i'); // case insensitive query
-  if (format) query.format = new RegExp(`^${format}$`, 'i');
+  if (formatType) query.format.type = new RegExp(`^${formatType}$`, 'i');
   if (price) query.price = { $gte: price[0], $lte: price[1] }
 
   if (practiceAreas) {
