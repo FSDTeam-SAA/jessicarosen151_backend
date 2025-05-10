@@ -11,26 +11,15 @@ export const createResourceService = async (data) => {
 export const getAllResourcesService = async (page, limit, skip, status, sellerId, categoryName, price, practiceAreas, formatType, search) => {
 
   const query = sellerId ? { createdBy: sellerId } : {};
-  if (status) query.status = new RegExp(`^${status}$`, 'i'); // case insensitive query
-  if (formatType) query.format.type = new RegExp(`^${formatType}$`, 'i');
+  if (status) query.status = new RegExp(`^${status}$`, 'i'); // allows full, case insensitive query
+  if (formatType) query["format.type"] = new RegExp(`^${formatType}$`, 'i');
   if (price) query.price = { $gte: price[0], $lte: price[1] }
 
   if (practiceAreas) {
-    query.practiceAreas = {
+    query.practiceAreas = typeof practiceAreas === "string" ? new RegExp(`^${practiceAreas}$`, 'i') : {
       $all: practiceAreas.map(area => new RegExp(`^${area}$`, 'i'))
     };
   }
-
-  if (search) {
-    const regex = new RegExp(search, 'i'); // case-insensitive regex
-    query.$or = [
-      { title: regex },
-      { description: regex },
-      { practiceAreas: regex }
-    ];
-  }
-
-  query.status = "approved";
 
   const resources = (
     await Resource.find(query)
@@ -43,10 +32,21 @@ export const getAllResourcesService = async (page, limit, skip, status, sellerId
   )
 
   const filteredResources = resources.filter((resource) => {
+
+    const title = resource.title.toLowerCase();
+    const description = resource.description?.toLowerCase() || "";
     const categoryNameLocal = resource.category.name.toLowerCase()
     const subCategoryName = resource.subCategory.name.toLowerCase()
+    const practiceAreasList = resource.practiceAreas?.map(p => p.toLowerCase()) || [];
 
-    const matchedSearch = search ? categoryNameLocal.includes(search) || subCategoryName.includes(search) : true;
+    const matchedSearch =
+      search ?
+        title.includes(search) ||
+        description.includes(search) ||
+        categoryNameLocal.includes(search) ||
+        subCategoryName.includes(search) ||
+        practiceAreasList.some(area => area.includes(search))
+        : true;
 
     const matchedCategoryName = categoryName ? categoryNameLocal.includes(categoryName) : true;
 
