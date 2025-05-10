@@ -28,7 +28,7 @@ export const createReview = async (req, res, next) => {
     }
 }
 
-export const getAllReviewsOfProduct = async (req, res, next) => {
+export const getAllReviewsOfResource = async (req, res, next) => {
     const { resourceId } = req.params;
     try {
         const reviews = await getAllReviewsOfProductService(resourceId);

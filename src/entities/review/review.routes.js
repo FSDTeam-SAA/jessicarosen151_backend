@@ -1,13 +1,13 @@
 import express from "express";
 import {
     createReview,
-    getAllReviewsOfProduct
+    getAllReviewsOfResource
 } from "./review.controller.js";
 
 const router = express.Router();
 
 // Public
-router.get("/get-all-reviews-product/:resourceId", getAllReviewsOfProduct);
+router.get("/get-all-reviews-product/:resourceId", getAllReviewsOfResource);
 
 router.post(
     "/create",
