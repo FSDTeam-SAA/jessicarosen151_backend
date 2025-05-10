@@ -34,6 +34,7 @@ export const getAllResourcesService = async (page, limit, skip, status, sellerId
 
   const resources = (
     await Resource.find(query)
+      .select("-__v -updatedAt")
       .populate("category", "name description")
       .populate("subCategory", "name description")
       .populate("createdBy", "firstName lastName email role")
@@ -62,7 +63,7 @@ export const getAllResourcesService = async (page, limit, skip, status, sellerId
         }
       }
     ])
-    resource.averageRating = averageRating
+    resource.averageRating = averageRating[0] ? averageRating[0].averageRating : 0;
 
     return resource;
   }))

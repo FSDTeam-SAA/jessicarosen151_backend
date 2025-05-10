@@ -9,22 +9,21 @@ import promoRoutes from '../../entities/promo_code/promo.routes.js';
 import contactRoutes from '../../entities/contact/contact.routes.js';
 import messageRoutes from '../../entities/message/message.routes.js';
 import cartRoutes from '../../entities/cart/cart.routes.js';
+import reviewRoutes from '../../entities/review/review.routes.js';
 
 const router = express.Router();
 
 // Define all your routes here
 router.use('/v1/auth', authRoutes);
 router.use('/v1/user', userRoutes);
-
 router.use('/v1/categories', categoryRoutes);
 router.use("/v1/subcategories", subCategoryRoutes);
 router.use('/v1/resources', resourceRoutes);
 router.use('/v1/blogs', blogRoutes);
-router.use('/v1/promo-codes', promoRoutes); 
+router.use('/v1/promo-codes', promoRoutes);
 router.use('/v1/contact', contactRoutes)
 router.use('/v1/message', messageRoutes);
 router.use('/v1/cart', cartRoutes);
-
-
+router.use('/v1/reviews', reviewRoutes);
 
 export default router;
