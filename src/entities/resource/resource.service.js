@@ -6,12 +6,29 @@ export const createResourceService = async (data) => {
 };
 
 
-export const getAllResourcesService = async (page, limit, skip, status, sellerId, categoryName, price, practiceAreas, search) => {
+export const getAllResourcesService = async (page, limit, skip, status, sellerId, categoryName, price, practiceAreas, format, search) => {
 
   const query = sellerId ? { createdBy: sellerId } : {};
-  if (status) query.status = status;
+  if (status) query.status = new RegExp(`^${status}$`, 'i'); // case insensitive query
+  if (format) query.format = new RegExp(`^${format}$`, 'i');
   if (price) query.price = { $gte: price[0], $lte: price[1] }
-  if (practiceAreas) query.practiceAreas = { $all: practiceAreas };
+
+  if (practiceAreas) {
+    query.practiceAreas = {
+      $all: practiceAreas.map(area => new RegExp(`^${area}$`, 'i'))
+    };
+  }
+
+  if (search) {
+    const regex = new RegExp(search, 'i'); // case-insensitive regex
+    query.$or = [
+      { title: regex },
+      { description: regex },
+      { practiceAreas: regex }
+    ];
+  }
+
+  query.status = "approved";
 
   const resources = (
     await Resource.find(query)
@@ -23,13 +40,10 @@ export const getAllResourcesService = async (page, limit, skip, status, sellerId
   )
 
   const filteredResources = resources.filter((resource) => {
-    const title = resource.title.toLowerCase();
-    const description = resource.description.toLowerCase();
-    const categoryNameLocal = resource.category.name.toLowerCase();
+    const categoryNameLocal = resource.category.name.toLowerCase()
     const subCategoryName = resource.subCategory.name.toLowerCase()
-    const practiceAreas = resource.practiceAreas.map(area => area.toLowerCase());
 
-    const matchedSearch = search ? title.includes(search) || description.includes(search) || categoryNameLocal.includes(search) || subCategoryName.includes(search) || practiceAreas.some(area => area.includes(search)) : true;
+    const matchedSearch = search ? categoryNameLocal.includes(search) || subCategoryName.includes(search) : true;
 
     const matchedCategoryName = categoryName ? categoryNameLocal.includes(categoryName) : true;
 
