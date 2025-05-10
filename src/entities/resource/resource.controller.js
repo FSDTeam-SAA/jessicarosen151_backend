@@ -69,15 +69,16 @@ export const getAllResources = async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
-  const status = req.query.status ? req.query.status.toLowerCase() : null;
+  const status = req.query.status;
   const sellerId = req.query.sellerId;
   const categoryName = req.query.categoryName ? req.query.categoryName.toLowerCase() : null;
   const price = req.query.price ? req.query.price.map(Number) : null;
   const practiceAreas = req.query.practiceAreas;
+  const format = req.query.format;
   const search = req.query.search ? req.query.search.toLowerCase() : null;
 
   try {
-    const { data, pagination } = await getAllResourcesService(page, limit, skip, status, sellerId, categoryName, price, practiceAreas, search);
+    const { data, pagination } = await getAllResourcesService(page, limit, skip, status, sellerId, categoryName, price, practiceAreas, format, search);
     return res.status(200).json({
       success: true,
       message: 'Fetched resources',
