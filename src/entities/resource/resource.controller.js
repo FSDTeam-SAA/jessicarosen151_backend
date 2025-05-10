@@ -15,24 +15,31 @@ export const createResource = async (req, res) => {
   try {
     const createdBy = req.user._id;
     const { title, description, price, discountPrice, quantity, category, subCategory, practiceAreas } = req.body;
-    console.log(practiceAreas);
 
     const thumbnailFile = req.files?.thumbnail?.[0];
     const formatFile = req.files?.format?.[0];
 
     let thumbnail = null;
     let formatUrl = null;
+    let formatType = null;
 
     if (thumbnailFile) {
       const result = await cloudinaryUpload(thumbnailFile.path, `thumb_${Date.now()}`, "resources/thumbnails");
       if (result?.secure_url) thumbnail = result.secure_url;
     }
-    console.log(formatFile);
+    //console.log(formatFile);
 
+    // Upload format file if provided
     if (formatFile) {
-      const result = await cloudinaryUpload(formatFile.path, `doc_${Date.now()}`, "resources/formats");
-      console.log(result);
+      const result = await cloudinaryUpload(
+        formatFile.path,
+        `doc_${Date.now()}`,
+        "resources/formats"
+      );
       if (result?.secure_url) formatUrl = result.secure_url;
+      if (formatFile?.mimetype && formatFile.mimetype.includes('/')) {
+        formatType = formatFile.mimetype.split('/')[1]; // e.g., 'pdf'
+      }
     }
 
     // status handling
@@ -48,7 +55,10 @@ export const createResource = async (req, res) => {
       price,
       discountPrice,
       quantity,
-      format: formatUrl,
+      format: {
+        url: formatUrl,
+        type: formatType || "application/octet-stream", 
+      },
       category,
       subCategory,
       thumbnail: thumbnail,
