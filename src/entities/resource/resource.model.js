@@ -24,7 +24,14 @@ const resourceSchema = new Schema(
       required: true
     },
     format: {
-      type: String,
+      url: {
+        type: String,
+        required: true
+      },
+      type: {
+        type: String,
+        required: true
+      }
     },
     category: {
       type: Schema.Types.ObjectId,
