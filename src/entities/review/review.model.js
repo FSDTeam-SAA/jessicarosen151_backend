@@ -16,7 +16,7 @@ const reviewSchema = new Schema(
         rating: {
             type: Number,
             required: true,
-            min: 1,
+            min: 0,
             max: 5,
         },
         comment: {
@@ -29,5 +29,5 @@ const reviewSchema = new Schema(
     }
 );
 
-const review = mongoose.model("Review", reviewSchema);
-export default review;
+const Review = mongoose.model("Review", reviewSchema);
+export default Review;
