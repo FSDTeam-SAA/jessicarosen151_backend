@@ -10,11 +10,19 @@ export const createReviewService = async ({ resourceId, userId, rating, comment 
     return
 };
 
-export const getAllReviewsOfProductService = async (resourceId) => {
+export const getAllReviewsOfProductService = async (resourceId, page, limit, skip) => {
     if (!resourceId) throw new Error("Resource ID is required");
 
-    const [reviews, averageRating] = await Promise.all([
-        Review.find({ resourceId }).populate("userId", "firstName lastName email profileImage"),
+    const [reviews, totalItems, averageRatingArray] = await Promise.all([
+        Review.find({ resourceId })
+            .select("-__v -updatedAt -resourceId")
+            .populate("userId", "firstName lastName email profileImage")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+
+        Review.countDocuments({ resourceId }),
+
         Review.aggregate([
             { $match: { resourceId: new mongoose.Types.ObjectId(resourceId) } },
             {
@@ -25,5 +33,21 @@ export const getAllReviewsOfProductService = async (resourceId) => {
             }
         ])
     ])
-    return { reviews, averageRating };
+
+    const averageRating = averageRatingArray[0] ? averageRatingArray[0].averageRating : 0;
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const data = {
+        reviews,
+        pagination: {
+            currentPage: page,
+            totalPages,
+            totalItems,
+            itemsPerPage: limit
+        },
+        averageRating
+    }
+
+    return data;
 }

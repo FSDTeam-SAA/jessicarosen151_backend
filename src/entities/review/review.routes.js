@@ -7,7 +7,7 @@ import {
 const router = express.Router();
 
 // Public
-router.get("/get-all-reviews-product/:resourceId", getAllReviewsOfResource);
+router.get("/get-all-reviews-resource/:resourceId", getAllReviewsOfResource);
 
 router.post(
     "/create",
