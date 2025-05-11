@@ -13,11 +13,11 @@ export const getAllResourcesService = async (page, limit, skip, status, sellerId
   const query = sellerId ? { createdBy: sellerId } : {};
   if (status) query.status = new RegExp(`^${status}$`, 'i'); // allows full, case insensitive query
   if (formatType) query["format.type"] = new RegExp(`^${formatType}$`, 'i');
-  if (price) query.price = { $gte: price[0], $lte: price[1] }
+  if (price) query.resultantPrice = { $gte: price[0], $lte: price[1] }
 
   if (practiceAreas) {
     query.practiceAreas = typeof practiceAreas === "string" ? new RegExp(`^${practiceAreas}$`, 'i') : {
-      $all: practiceAreas.map(area => new RegExp(`^${area}$`, 'i'))
+      $in: practiceAreas.map(area => new RegExp(`^${area}$`, 'i'))
     };
   }
 
@@ -26,7 +26,7 @@ export const getAllResourcesService = async (page, limit, skip, status, sellerId
       .select("-__v -updatedAt")
       .populate("category", "name description")
       .populate("subCategory", "name description")
-      .populate("createdBy", "firstName lastName email role")
+      .populate("createdBy", "firstName lastName email profileImage")
       .sort({ createdAt: -1 })
       .lean()
   )
@@ -54,16 +54,19 @@ export const getAllResourcesService = async (page, limit, skip, status, sellerId
   })
 
   const modifiedResources = await Promise.all(filteredResources.map(async (resource) => {
-    const averageRating = await Review.aggregate([
+    const reviewInfo = await Review.aggregate([
       { $match: { resourceId: new mongoose.Types.ObjectId(resource._id) } },
       {
         $group: {
           _id: "$resourceId",
-          averageRating: { $avg: "$rating" }
+          averageRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 }
         }
       }
     ])
-    resource.averageRating = averageRating[0] ? averageRating[0].averageRating : 0;
+
+    resource.averageRating = reviewInfo[0]?.averageRating || 0;
+    resource.totalReviews = reviewInfo[0]?.totalReviews || 0;
 
     return resource;
   }))
@@ -85,11 +88,56 @@ export const getAllResourcesService = async (page, limit, skip, status, sellerId
 };
 
 
-export const getResourceByIdService = async (id) => {
-  return await Resource.findById(id)
-    .populate("category", "name")
-    .populate("subCategory", "name")
-    .populate("createdBy", "firstName lastName email");
+export const getResourceByIdService = async (id, page, limit, skip) => {
+  const resource = (
+    await Resource.findById(id)
+      .select("-__v -updatedAt")
+      .populate("category", "name description")
+      .populate("subCategory", "name description")
+      .populate("createdBy", "firstName lastName email profileImage")
+      .lean()
+  )
+
+  if (!resource) throw new Error("Resource not found")
+
+  const [reviewInfo, reviews] = await Promise.all([
+    Review.aggregate([
+      { $match: { resourceId: new mongoose.Types.ObjectId(resource._id) } },
+      {
+        $group: {
+          _id: "$resourceId",
+          averageRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 }
+        }
+      }
+    ]),
+
+    Review.find({ resourceId: resource._id })
+      .select("-__v -updatedAt -resourceId")
+      .populate("userId", "firstName lastName email profileImage")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+  ])
+
+  const totalReviews = reviewInfo[0]?.totalReviews || 0;
+
+  resource.averageRating = reviewInfo[0]?.averageRating || 0;
+  resource.totalReviews = totalReviews;
+  resource.reviews = reviews;
+
+  const pagination = {
+    currentPage: page,
+    totalPages: Math.ceil(totalReviews / limit),
+    totalItems: totalReviews,
+    itemsPerPage: limit
+  }
+
+  return {
+    data: resource,
+    pagination
+  }
 };
 
 
