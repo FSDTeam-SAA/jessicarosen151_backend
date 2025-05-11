@@ -19,6 +19,9 @@ const resourceSchema = new Schema(
       type: Number,
       default: 0
     },
+    resultantPrice: {
+      type: Number
+    },
     quantity: {
       type: Number,
       required: true
@@ -99,6 +102,15 @@ resourceSchema.pre("validate", async function (next) {
     this.productId = generatedId;
   }
 
+  next();
+});
+
+// calculate resultant price before saving
+resourceSchema.pre("save", function (next) {
+  this.resultantPrice =
+    this.discountPrice > 0 && this.discountPrice < this.price
+      ? this.price - this.discountPrice
+      : this.price;
   next();
 });
 
