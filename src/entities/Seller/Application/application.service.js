@@ -27,3 +27,18 @@ export const getAllSellerApplicationsService = async () => {
 };
 
 
+// Admin: Approve seller
+export const approveSellerApplicationService = async (userId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  user.sellerStatus = 'approved';
+  user.role = RoleType.SELLER;
+
+  await user.save();
+
+  const userObj = user.toObject();
+  delete userObj.password;
+  return userObj;
+};
+
