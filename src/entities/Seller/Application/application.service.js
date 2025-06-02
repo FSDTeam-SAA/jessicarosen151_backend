@@ -28,17 +28,29 @@ export const getAllSellerApplicationsService = async () => {
 
 
 // Admin: Approve seller
-export const approveSellerApplicationService = async (userId) => {
-  const user = await User.findById(userId);
-  if (!user) throw new Error("User not found");
+export const approveSellerApplicationService = async (userId, status) => {
+  if (!['approved', 'rejected'].includes(status)) {
+    throw new Error("Invalid status. Must be either 'approved' or 'rejected'");
+  }
 
-  user.sellerStatus = 'approved';
-  user.role = RoleType.SELLER;
+  const updateData = {
+    sellerStatus: status
+  };
 
-  await user.save();
+  if (status === 'approved') {
+    updateData.role = RoleType.SELLER;
+  }
 
-  const userObj = user.toObject();
-  delete userObj.password;
-  return userObj;
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    updateData,
+    { new: true }
+  ).select('-password');
+
+  if (!updatedUser) {
+    throw new Error("User not found or update failed");
+  }
+
+  return updatedUser;
 };
 
