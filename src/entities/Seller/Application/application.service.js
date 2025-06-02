@@ -21,6 +21,9 @@ export const createApplication = async (data) => {
     return userObj;
 
 }
-
+// Admin: Get all seller applications
+export const getAllSellerApplicationsService = async () => {
+  return await User.find({ sellerStatus: { $in: ['pending', 'rejected'] } }).sort({ createdAt: -1 });
+};
 
 
