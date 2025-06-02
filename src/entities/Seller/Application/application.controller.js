@@ -17,7 +17,7 @@ export const getAllSellerApplicationsController = async (req, res) => {
     const applications = await getAllSellerApplicationsService();
     generateResponse(res, 200, true, "Fetched all seller applications", applications);
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    generateResponse(res, 400, false, "Failed to fetch applications", error.message);
   }
 };
 
@@ -26,8 +26,8 @@ export const updateSellerApplicationStatusController = async (req, res) => {
     const { status } = req.body;
     const { id } = req.params;
     const updated = await approveSellerApplicationService(id, status);
-    res.status(200).json({ success: true, data: updated });
+    generateResponse(res, 200, true, "Seller application status updated successfully", updated);
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    generateResponse(res, 400, false, "Failed to update application status", error.message);
   }
 };
