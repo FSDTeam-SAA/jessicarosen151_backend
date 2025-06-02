@@ -1,3 +1,4 @@
+import { generateResponse } from "../../../lib/responseFormate";
 import { approveSellerApplicationService, createApplication, getAllSellerApplicationsService } from "./application.service";
 
 
@@ -5,16 +6,16 @@ export const applyToBecomeSellerController = async (req, res) => {
   try {
     const data = req.body;
     const created = await createApplication(data);
-    res.status(201).json({ success: true, data: created });
+   generateResponse(res, 201, true, "Application created successfully", created);
   } catch (error) {
-    res.status(400).json({ success: false, message: error.message });
+    generateResponse(res, 400, false, "Failed to create application", error.message);
   }
 };
 
 export const getAllSellerApplicationsController = async (req, res) => {
   try {
     const applications = await getAllSellerApplicationsService();
-    res.status(200).json({ success: true, data: applications });
+    generateResponse(res, 200, true, "Fetched all seller applications", applications);
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
