@@ -32,6 +32,14 @@ const UserSchema = new mongoose.Schema(
       default: RoleType.USER,
       enum: [RoleType.USER, RoleType.ADMIN, RoleType.SELLER],
     },
+
+    sellerStatus: {
+  type: String,
+  enum: ['pending', 'approved', 'rejected'],
+  default: 'pending',
+},
+
+
     bio: { type: String, default: '' },
     address: { type: AddressSchema, default: () => ({}) },
 
