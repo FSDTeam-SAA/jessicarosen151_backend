@@ -10,7 +10,7 @@ export const createApplication = async (data) => {
 
     // create new application 
 
-    const user = new User.create({
+    const user =  User.create({
         ...data,
         role: RoleType.USER,
         sellerStatus: 'pending'
