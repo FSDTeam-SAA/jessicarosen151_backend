@@ -10,15 +10,16 @@ export const createApplication = async (data) => {
 
     // create new application 
 
-    const user =  User.create({
+    const user =User.create({
         ...data,
         role: RoleType.USER,
         sellerStatus: 'pending'
     })
 
-    const userObj = user.toObject();
-    delete userObj.password;
-    return userObj;
+return user
+   
+  
+    
 
 }
 // Admin: Get all seller applications
@@ -28,7 +29,7 @@ export const getAllSellerApplicationsService = async () => {
 
 
 // Admin: Approve seller
-export const approveSellerApplicationService = async (userId, status) => {
+export const approveSellerApplicationService = async (id, status) => {
   if (!['approved', 'rejected'].includes(status)) {
     throw new Error("Invalid status. Must be either 'approved' or 'rejected'");
   }
@@ -42,7 +43,7 @@ export const approveSellerApplicationService = async (userId, status) => {
   }
 
   const updatedUser = await User.findByIdAndUpdate(
-    userId,
+    id,
     updateData,
     { new: true }
   ).select('-password');
