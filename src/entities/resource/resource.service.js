@@ -198,9 +198,9 @@ export const deleteResourceService = async (id, user) => {
 };
 
 
-export const getSellerResourcesService = async (sellerId) => {
+export const getSellerResourcesService = async (myId) => {
   try {
-    const resources = await Resource.find({ createdBy: sellerId })
+    const resources = await Resource.find({ createdBy: myId })
       .populate("category", "name")
       .populate("subCategory", "name")
       .sort({ createdAt: -1 });

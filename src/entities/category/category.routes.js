@@ -6,7 +6,7 @@ import { adminMiddleware, verifyToken } from "../../core/middlewares/authMiddlew
 const router = express.Router();
 
 // Public 
-router.get('/get-all-categories', getAllCategories);
+router.get('/all', getAllCategories);
 router.get('/:id', getCategoryById);
 
 // Admin protected
