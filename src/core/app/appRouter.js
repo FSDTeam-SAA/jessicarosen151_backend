@@ -17,9 +17,9 @@ const router = express.Router();
 // Define all your routes here
 router.use('/v1/auth', authRoutes);
 router.use('/v1/user', userRoutes);
-router.use('/v1/categories', categoryRoutes);
-router.use("/v1/subcategories", subCategoryRoutes);
-router.use('/v1/resources', resourceRoutes);
+router.use('/v1/category', categoryRoutes);
+router.use("/v1/subcategory", subCategoryRoutes);
+router.use('/v1/resource', resourceRoutes);
 router.use('/v1/blogs', blogRoutes);
 router.use('/v1/promo-codes', promoRoutes);
 router.use('/v1/contact', contactRoutes)

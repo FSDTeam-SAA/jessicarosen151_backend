@@ -153,9 +153,9 @@ export const deleteResource = async (req, res) => {
 
 export const getSellerResources = async (req, res) => {
   try {
-    const sellerId = req.user._id;
+    const myId = req.user._id;
 
-    const resources = await getSellerResourcesService(sellerId);
+    const resources = await getSellerResourcesService(myId);
 
     generateResponse(res, 200, true, "Fetched seller resources successfully", resources);
   } catch (error) {
