@@ -1,5 +1,5 @@
-import RoleType from "../../../lib/types";
-import User from "../../auth/auth.model";
+import RoleType from "../../../lib/types.js";
+import User from "../../auth/auth.model.js";
 
 export const createApplication = async (data) => {
 
