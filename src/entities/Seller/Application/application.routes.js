@@ -1,6 +1,6 @@
 import express from 'express';
-import { applyToBecomeSellerController, getAllSellerApplicationsController, updateSellerApplicationStatusController } from './application.controller';
-import { adminMiddleware, verifyToken } from '../../../core/middlewares/authMiddleware';
+import { applyToBecomeSellerController, getAllSellerApplicationsController, updateSellerApplicationStatusController } from './application.controller.js';
+import { adminMiddleware, verifyToken } from '../../../core/middlewares/authMiddleware.js';
 const router = express.Router();
 
 router.post('/apply',applyToBecomeSellerController)

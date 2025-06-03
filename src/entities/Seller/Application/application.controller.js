@@ -1,5 +1,5 @@
-import { generateResponse } from "../../../lib/responseFormate";
-import { approveSellerApplicationService, createApplication, getAllSellerApplicationsService } from "./application.service";
+import { generateResponse } from "../../../lib/responseFormate.js";
+import { approveSellerApplicationService, createApplication, getAllSellerApplicationsService } from "./application.service.js";
 
 
 export const applyToBecomeSellerController = async (req, res) => {
