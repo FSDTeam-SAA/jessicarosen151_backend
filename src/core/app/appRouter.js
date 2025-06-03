@@ -20,8 +20,8 @@ router.use('/v1/user', userRoutes);
 router.use('/v1/category', categoryRoutes);
 router.use("/v1/subcategory", subCategoryRoutes);
 router.use('/v1/resource', resourceRoutes);
-router.use('/v1/blogs', blogRoutes);
-router.use('/v1/promo-codes', promoRoutes);
+router.use('/v1/blog', blogRoutes);
+router.use('/v1/promo-code', promoRoutes);
 router.use('/v1/contact', contactRoutes)
 router.use('/v1/message', messageRoutes);
 router.use('/v1/cart', cartRoutes);
