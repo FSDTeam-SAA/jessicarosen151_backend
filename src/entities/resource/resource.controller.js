@@ -57,7 +57,7 @@ export const createResource = async (req, res) => {
       quantity,
       format: {
         url: formatUrl,
-        type: formatType || "application/octet-stream", 
+        type: formatType || "application/octet-stream",
       },
       category,
       subCategory,
@@ -103,14 +103,30 @@ export const getAllResources = async (req, res, next) => {
 }
 
 
-export const getResourceById = async (req, res) => {
+export const getResourceById = async (req, res, next) => {
+  const resourceId = req.params.id;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
   try {
-    const resource = await getResourceByIdService(req.params.id);
-    if (!resource) return generateResponse(res, 404, false, "Resource not found");
+    const { data, pagination } = await getResourceByIdService(resourceId, page, limit, skip);
 
-    generateResponse(res, 200, true, "Fetched resource", resource);
-  } catch (error) {
-    generateResponse(res, 500, false, "Failed to fetch resource", error.message);
+    return res.status(200).json({
+      success: true,
+      message: "Fetched resource successfully",
+      data,
+      pagination
+    });
+  }
+
+  catch (error) {
+    if (error.message === "Resource not found") {
+      generateResponse(res, 404, false, error.message, null);
+    }
+
+    else {
+      next(error);
+    }
   }
 };
 
