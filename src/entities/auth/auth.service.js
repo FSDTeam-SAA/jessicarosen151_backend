@@ -112,7 +112,7 @@ export const verifyCodeService = async ({ email, otp }) => {
 
   if (!user.otp || !user.otpExpires) throw new Error('Otp not found');
 
-  if (user.otp !== otp || new Date() > user.otpExpires) throw new Error('Invalid or expired otp')
+  if (parseInt(user.otp, 10) !== parseInt(otp, 10) || Date.now() > user.otpExpires.getTime()) throw new Error('Invalid or expired otp')
 
   user.otp = null;
   user.otpExpires = null;
@@ -129,6 +129,22 @@ export const resetPasswordService = async ({ email, newPassword }) => {
   if (!user) throw new Error('Invalid email');
 
   if (user.otp || user.otpExpires) throw new Error('otp not cleared');
+
+  user.password = newPassword;
+  await user.save();
+
+  return;
+};
+
+
+export const changePasswordService = async ({ userId, oldPassword, newPassword }) => {
+  if (!userId || !oldPassword || !newPassword) throw new Error('User id, old password and new password are required');
+
+  const user = await User.findById(userId);
+  if (!user) throw new Error('User not found');
+
+  const isMatch = await user.comparePassword(userId, oldPassword);
+  if (!isMatch) throw new Error('Invalid old password');
 
   user.password = newPassword;
   await user.save();

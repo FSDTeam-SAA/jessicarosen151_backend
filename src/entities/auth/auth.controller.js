@@ -6,7 +6,8 @@ import {
   refreshAccessTokenService,
   forgetPasswordService,
   verifyCodeService,
-  resetPasswordService
+  resetPasswordService,
+  changePasswordService
 } from './auth.service.js';
 
 
@@ -179,3 +180,27 @@ export const resetPassword = async (req, res, next) => {
   }
 };
 
+
+
+export const changePassword = async (req, res, next) => {
+  const { oldPassword, newPassword } = req.body;
+  const userId = req.user._id;
+  try {
+    await changePasswordService({ userId, oldPassword, newPassword });
+    generateResponse(res, 200, true, 'Password changed successfully', null);
+  }
+
+  catch (error) {
+    if (error.message === 'Old and new passwords are required') {
+      generateResponse(res, 400, false, 'Old and new passwords are required', null);
+    }
+
+    else if (error.message === 'Password does not match') {
+      generateResponse(res, 400, false, 'Password does not match', null);
+    }
+
+    else {
+      next(error)
+    }
+  }
+};
