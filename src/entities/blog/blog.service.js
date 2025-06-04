@@ -19,6 +19,7 @@ export const updateBlogService = async (blogId, updateData) => {
   return updated;
 };
 
+
 export const deleteBlogService = async (blogId) => {
   const deleted = await Blog.findByIdAndDelete(blogId);
   if (!deleted) throw new Error("Blog not found or already deleted");
