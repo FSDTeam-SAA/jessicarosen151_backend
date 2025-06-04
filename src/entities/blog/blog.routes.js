@@ -24,7 +24,15 @@ router.post(
   multerUpload([{ name: "thumbnail", maxCount: 1 }]),
   createBlog
 );
-router.put("/:id", verifyToken, adminMiddleware, updateBlog);
+
+router.put(
+  "/:id",
+  verifyToken,
+  adminMiddleware,
+  multerUpload([{ name: "thumbnail", maxCount: 1 }]), 
+  updateBlog
+);
+
 router.delete("/:id", verifyToken, adminMiddleware, deleteBlog);
 
 export default router;
