@@ -29,11 +29,26 @@ export const createMessage = async (req, res) => {
 }
 
 
+export const getUserConversations = async (req, res) => {
+  try {
+    if(req.user.role !== "ADMIN"){
+        return generateResponse(res, 403, false, "You are not authorized to view these conversations");
+    }   
+    const result = await getUserConversationsService();
+
+    generateResponse(res, 200, true, "Conversations fetched successfully", result);
+  } catch (error) {
+    generateResponse(res, 500, false, "Failed to fetch conversations", error.message);
+  }
+};
+
+
 export const getMessagesByResource = async (req, res) => {
     try {
       const { resourceId } = req.params;
   
       const resource = await Resource.findById(resourceId);
+
       if (!resource) {
         return generateResponse(res, 404, false, "Resource not found");
       }
@@ -51,18 +66,4 @@ export const getMessagesByResource = async (req, res) => {
     } catch (error) {
       generateResponse(res, 500, false, "Failed to fetch messages", error.message);
     }
-};
-  
-
-export const getUserConversations = async (req, res) => {
-  try {
-    if(req.user.role !== "ADMIN"){
-        return generateResponse(res, 403, false, "You are not authorized to view these conversations");
-    }   
-    const result = await getUserConversationsService();
-
-    generateResponse(res, 200, true, "Conversations fetched successfully", result);
-  } catch (error) {
-    generateResponse(res, 500, false, "Failed to fetch conversations", error.message);
-  }
 };

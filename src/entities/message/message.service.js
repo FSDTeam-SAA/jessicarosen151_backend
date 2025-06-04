@@ -1,5 +1,5 @@
 import Message from "./message.model.js";
-
+import { io } from "../../app.js";
 
 export const sendMessageService = async (resource,message) => {
 
@@ -20,9 +20,28 @@ export const sendMessageService = async (resource,message) => {
             { new: true, upsert: true }
         );
         
+        // socket.io emit
+        io.to(`room-${resource}`).emit("message", {
+            message: message,
+            sender: message.sender,
+            resourceId: resource,
+            createdAt: new Date(),
+        });
+
         return updateMessage;
     }
 };
+
+
+export const getUserConversationsService = async () => {
+    const messages = await Message.find({})
+      .populate("resource", "title")
+      .populate("messages.sender", "firstName lastName email role")
+      .sort({ createdAt: -1 })
+      .lean();
+  
+    return messages;
+}
 
 
 export const getMessagesByResourceService = async (resourceId,userId) => {
@@ -44,14 +63,3 @@ export const getMessagesByResourceService = async (resourceId,userId) => {
         messages,
     };
 };
-
-
-export const getUserConversationsService = async () => {
-    const messages = await Message.find({})
-      .populate("resource", "title")
-      .populate("messages.sender", "firstName lastName email role")
-      .sort({ createdAt: -1 })
-      .lean();
-  
-    return messages;
-}
