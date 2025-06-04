@@ -1,34 +1,33 @@
 import ResourceType from "./resourceTypes.model.js";
 
-export const createPracticeAreaService = async ({ name, description }) => {
-  const existing = await ResourceType.findOne({ name: name.trim() });
-  if (existing) throw new Error('Practice Area already exists.');
+export const createResourceTypeService = async ({ resourceTypeName, description }) => {
+  const existing = await ResourceType.findOne({ resourceTypeName: resourceTypeName.trim() });
+  if (existing) throw new Error('Resource Type already exists.');
 
-  const practiceArea = new ResourceType({ name, description });
-  return await practiceArea.save();
+  const resourceType = new ResourceType({ resourceTypeName, description });
+  return await resourceType.save();
 };
 
-
-export const getAllPracticeAreasService = async () => {
-  const practiceAreas = (
+export const getAllResourceTypesService = async () => {
+  const resourceTypes = (
     await ResourceType.find({})
   )
-  return practiceAreas;
+  return resourceTypes;
 };
 
-export const getPracticeAreaByIdService = async (practiceAreaId) => {
-  return await ResourceType.findById(practiceAreaId);
+export const getResourceTypeByIdService = async (resourceTypeId) => {
+  return await ResourceType.findById(resourceTypeId);
 };
 
-export const updatePracticeAreaService = async (practiceAreaId, updateData) => {
-  const updated = await ResourceType.findByIdAndUpdate(practiceAreaId, updateData, { new: true });
-  if (!updated) throw new Error('Practice Area not found');
+export const updateResourceTypeService = async (resourceTypeId, updateData) => {
+  const updated = await ResourceType.findByIdAndUpdate(resourceTypeId, updateData, { new: true });
+  if (!updated) throw new Error('Resource Type not found');
   return updated;
 };
 
-export const deletePracticeAreaService = async (practiceAreaId) => {
-  const deleted = await ResourceType.findByIdAndDelete(practiceAreaId);
-  if (!deleted) throw new Error('Practice Area not found or already deleted');
+export const deleteResourceTypeService = async (resourceTypeId) => {
+  const deleted = await ResourceType.findByIdAndDelete(resourceTypeId);
+  if (!deleted) throw new Error('Resource Type not found or already deleted');
   return deleted;
 };
 
