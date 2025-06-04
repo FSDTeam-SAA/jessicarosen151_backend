@@ -61,20 +61,6 @@ export const loginUser = async (req, res, next) => {
 };
 
 
-export const logoutUser = async (req, res, next) => {
-
-  const userId = req.user._id;
-  try {
-    await User.findByIdAndUpdate(userId, { refreshToken: null });
-    generateResponse(res, 200, true, 'Logged out successfully', null);
-  }
-
-  catch (error) {
-    next(error);
-  }
-};
-
-
 export const refreshAccessToken = async (req, res, next) => {
   const { refreshToken } = req.body;
 
@@ -154,6 +140,7 @@ export const verifyCode = async (req, res, next) => {
   }
 };
 
+
 export const resetPassword = async (req, res, next) => {
   const { email, newPassword } = req.body;
   try {
@@ -181,7 +168,6 @@ export const resetPassword = async (req, res, next) => {
 };
 
 
-
 export const changePassword = async (req, res, next) => {
   const { oldPassword, newPassword } = req.body;
   const userId = req.user._id;
@@ -202,5 +188,18 @@ export const changePassword = async (req, res, next) => {
     else {
       next(error)
     }
+  }
+};
+
+export const logoutUser = async (req, res, next) => {
+
+  const userId = req.user._id;
+  try {
+    await User.findByIdAndUpdate(userId, { refreshToken: null });
+    generateResponse(res, 200, true, 'Logged out successfully', null);
+  }
+
+  catch (error) {
+    next(error);
   }
 };
