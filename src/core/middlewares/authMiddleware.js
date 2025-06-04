@@ -77,6 +77,7 @@ const sellerMiddleware = (req, res, next) => {
   next();
 };
 
+
 const adminSellerMiddleware = (req, res, next) => {
   if (!req.user) {
     return generateResponse(res, 401, false, 'Unauthorized: Seller not found', null);
@@ -90,6 +91,7 @@ const adminSellerMiddleware = (req, res, next) => {
   next();
 };
 
+
 const userAdminSellerMiddleware = (req, res, next) => {
   const { role } = req.user || {};
 
@@ -99,6 +101,7 @@ const userAdminSellerMiddleware = (req, res, next) => {
   }
   next();
 };
+
 
 export{ userMiddleware, adminMiddleware, sellerMiddleware, adminSellerMiddleware, userAdminSellerMiddleware };
 
