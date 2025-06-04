@@ -89,7 +89,8 @@ export const getAllResources = async (req, res, next) => {
     fileType,
     search,
     country,
-    states
+    states,
+    sortedBy,
   } = req.query;
 
   try {
@@ -110,7 +111,9 @@ export const getAllResources = async (req, res, next) => {
       fileType,
       search?.toLowerCase(),
       country,
-      statesArray
+      statesArray,
+      sortedBy,
+      
     );
 
     return res.status(200).json({
@@ -123,6 +126,8 @@ export const getAllResources = async (req, res, next) => {
     next(error);
   }
 };
+
+
 
 export const getResourceById = async (req, res, next) => {
   const resourceId = req.params.id;
