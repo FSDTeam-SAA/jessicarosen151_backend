@@ -1,4 +1,3 @@
-// cart.controller.js
 import {
   addToCartService,
   getCartDetailsService,
@@ -8,9 +7,10 @@ import {
 } from "./cart.service.js";
 import { generateResponse } from "../../lib/responseFormate.js";
 
+
 export const addToCart = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user?._id;
     const { resourceId, quantity } = req.body;
     const updatedCart = await addToCartService(userId, resourceId, quantity);
     generateResponse(res, 200, true, "Item added to cart", updatedCart);
@@ -19,9 +19,10 @@ export const addToCart = async (req, res) => {
   }
 };
 
+
 export const getCartDetails = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user?._id;
     const cart = await getCartDetailsService(userId);
     if (!cart) return generateResponse(res, 404, false, "Cart not found");
     generateResponse(res, 200, true, "Cart fetched successfully", cart);
@@ -30,10 +31,13 @@ export const getCartDetails = async (req, res) => {
   }
 };
 
+
 export const updateCartItem = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { resourceId, quantity } = req.body;
+    const resourceId = req.params.resourceId;
+    const { quantity } = req.body;
+
     const updatedCart = await updateCartItemService(userId, resourceId, quantity);
     generateResponse(res, 200, true, "Cart item updated", updatedCart);
   } catch (error) {
@@ -41,16 +45,19 @@ export const updateCartItem = async (req, res) => {
   }
 };
 
+
 export const removeCartItem = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { resourceId } = req.body;
+    const resourceId = req.params.resourceId;
+
     const updatedCart = await removeCartItemService(userId, resourceId);
     generateResponse(res, 200, true, "Item removed from cart", updatedCart);
   } catch (error) {
     generateResponse(res, 400, false, "Failed to remove item", error.message);
   }
 };
+
 
 export const clearCart = async (req, res) => {
   try {

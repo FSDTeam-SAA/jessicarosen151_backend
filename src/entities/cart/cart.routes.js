@@ -15,12 +15,8 @@ const router = express.Router();
 router
   .route("/")
   .get(verifyToken, getCartDetails)     
+  .post(verifyToken, addToCart)         
   .delete(verifyToken, clearCart);      
-
-
-router
-  .route("/add")
-  .post(verifyToken, addToCart);        
 
 
 router
