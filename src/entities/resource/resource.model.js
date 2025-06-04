@@ -7,6 +7,25 @@ const resourceSchema = new Schema(
       required: true,
       trim: true
     },
+    country: {
+      type: String,
+      default: ""
+    },
+    states: [{
+      type: String,
+      default: ""
+    }],
+
+    resourceType: {
+      type: [String],
+      default: []
+    },
+
+    Litigation: {
+      type: Boolean,
+      default: false
+    },
+
     description: {
       type: String,
       default: ""
@@ -19,14 +38,11 @@ const resourceSchema = new Schema(
       type: Number,
       default: 0
     },
-    resultantPrice: {
-      type: Number
-    },
     quantity: {
       type: Number,
       required: true
     },
-    format: {
+    file: {
       url: {
         type: String,
         required: true
@@ -36,16 +52,7 @@ const resourceSchema = new Schema(
         required: true
       }
     },
-    category: {
-      type: Schema.Types.ObjectId,
-      ref: "Category",
-      required: true
-    },
-    subCategory: {
-      type: Schema.Types.ObjectId,
-      ref: "SubCategory",
-      required: true
-    },
+    
     thumbnail: {
       type: String,
     },
@@ -66,19 +73,6 @@ const resourceSchema = new Schema(
     },
     practiceAreas: {
       type: [String],
-      enum: [
-        "Employment",
-        "Corporate and M&A",
-        "Litigation",
-        "Legal Operations",
-        "Professional Development",
-        "Commercial Transactions",
-        "Commercial Real Estate",
-        "Finance",
-        "Estates Law",
-        "Wills Law",
-        "Corporate Law"
-      ],
       default: []
     }
   },
