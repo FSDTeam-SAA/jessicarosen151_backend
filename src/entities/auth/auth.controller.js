@@ -37,7 +37,7 @@ export const loginUser = async (req, res, next) => {
 
   try {
     const data = await loginUserService({ email, password })
-    console.log(data)
+
     generateResponse(res, 200, true, 'Login successful', data);
   }
 
