@@ -21,11 +21,6 @@ const resourceSchema = new Schema(
       default: []
     },
 
-    Litigation: {
-      type: Boolean,
-      default: false
-    },
-
     description: {
       type: String,
       default: ""
@@ -81,14 +76,19 @@ const resourceSchema = new Schema(
   }
 );
 
-// Generate random 5-digits Product ID
+
 resourceSchema.pre("validate", async function (next) {
   if (!this.productId) {
     let isUnique = false;
     let generatedId;
 
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
     while (!isUnique) {
-      generatedId = Math.floor(10000 + Math.random() * 90000).toString();
+      generatedId = Array(6)
+        .fill("")
+        .map(() => characters.charAt(Math.floor(Math.random() * characters.length)))
+        .join("");
       const existing = await mongoose.models.Resource.findOne({ productId: generatedId });
       if (!existing) isUnique = true;
     }
