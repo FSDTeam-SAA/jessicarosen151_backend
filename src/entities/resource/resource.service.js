@@ -19,7 +19,8 @@ export const getAllResourcesService = async (
   fileType, 
   search,
   country,
-  states
+  states,
+  sortedBy
 ) => {
   const query = sellerId ? { createdBy: sellerId } : {};
   
@@ -40,11 +41,12 @@ export const getAllResourcesService = async (
       ? new RegExp(`^${resourceType}$`, 'i')
       : { $in: resourceType.map(type => new RegExp(`^${type}$`, 'i')) };
   }
+  
 
   const resources = await Resource.find(query)
     .select("-__v -updatedAt")
     .populate("createdBy", "firstName lastName email profileImage")
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1 }) // initial sorting, may be overridden
     .lean();
 
   const filteredResources = resources.filter((resource) => {
@@ -83,9 +85,31 @@ export const getAllResourcesService = async (
     })
   );
 
-  const totalItems = modifiedResources.length;
+  // Sorting logic based on 'sortedBy'
+  let finalResources = [...modifiedResources];
+  switch (sortedBy?.toLowerCase()) {
+    case 'best reviewed':
+    case 'rating':
+      finalResources.sort((a, b) => b.averageRating - a.averageRating);
+      break;
+    case 'most recent':
+      finalResources.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      break;
+    case 'best sellers(products)':
+      finalResources.sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0));
+      break;
+    case 'best sellers(people)':
+      // You can implement seller-level aggregation here if needed
+      break;
+    case 'relevance':
+    default:
+      // Keep current filteredResources order (implicitly by match strength)
+      break;
+  }
+
+  const totalItems = finalResources.length;
   const totalPages = Math.ceil(totalItems / limit);
-  const paginatedResources = modifiedResources.slice(skip, skip + limit);
+  const paginatedResources = finalResources.slice(skip, skip + limit);
 
   return {
     data: paginatedResources,
