@@ -10,6 +10,8 @@ import messageRoutes from '../../entities/message/message.routes.js';
 import cartRoutes from '../../entities/cart/cart.routes.js';
 import reviewRoutes from '../../entities/review/review.routes.js';
 import applicationRoutes from '../../entities/Seller/Application/application.routes.js'
+import countryRoutes from '../../entities/country/country.routes.js';
+import resourceTypesRoutes from '../../entities/rTypes/resourceTypes.routes.js'
 
 const router = express.Router();
 
@@ -17,9 +19,11 @@ const router = express.Router();
 router.use('/v1/auth', authRoutes);
 router.use('/v1/user', userRoutes);
 router.use('/v1/practice-area', practiceAreaRoutes);
+router.use('/v1/country-state', countryRoutes);
 router.use('/v1/resource', resourceRoutes);
-router.use('/v1/blog', blogRoutes);
-router.use('/v1/promo-code', promoRoutes);
+router.use('/v1/resource-types', resourceTypesRoutes);
+router.use('/v1/blogs', blogRoutes);
+router.use('/v1/promo-codes', promoRoutes);
 router.use('/v1/contact', contactRoutes)
 router.use('/v1/message', messageRoutes);
 router.use('/v1/cart', cartRoutes);

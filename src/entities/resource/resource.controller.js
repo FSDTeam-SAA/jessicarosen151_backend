@@ -9,45 +9,47 @@ import {
 import { generateResponse } from "../../lib/responseFormate.js";
 import { cloudinaryUpload } from "../../lib/cloudinaryUpload.js";
 
-
-
 export const createResource = async (req, res) => {
   try {
     const createdBy = req.user._id;
-    const { title, description, price, discountPrice, quantity, category, subCategory, practiceAreas } = req.body;
+    const { 
+      title, 
+      description, 
+      price, 
+      discountPrice, 
+      quantity, 
+      country, 
+      states, 
+      resourceType, 
+      practiceAreas 
+    } = req.body;
 
     const thumbnailFile = req.files?.thumbnail?.[0];
-    const formatFile = req.files?.format?.[0];
+    const file = req.files?.file?.[0];
 
     let thumbnail = null;
-    let formatUrl = null;
-    let formatType = null;
+    let fileUrl = null;
+    let fileType = null;
 
     if (thumbnailFile) {
       const result = await cloudinaryUpload(thumbnailFile.path, `thumb_${Date.now()}`, "resources/thumbnails");
       if (result?.secure_url) thumbnail = result.secure_url;
     }
-    //console.log(formatFile);
 
-    // Upload format file if provided
-    if (formatFile) {
+    if (file) {
       const result = await cloudinaryUpload(
-        formatFile.path,
+        file.path,
         `doc_${Date.now()}`,
-        "resources/formats"
+        "resources/files"
       );
-      if (result?.secure_url) formatUrl = result.secure_url;
-      if (formatFile?.mimetype && formatFile.mimetype.includes('/')) {
-        formatType = formatFile.mimetype.split('/')[1]; // e.g., 'pdf'
-      }
+      if (result?.secure_url) fileUrl = result.secure_url;
+      fileType = file.mimetype || "application/octet-stream";
     }
 
-    // status handling
     let status = "pending";
-    if (req.user.role == "ADMIN") {
+    if (req.user.role === "ADMIN") {
       status = "approved";
     }
-
 
     const resource = await createResourceService({
       title,
@@ -55,17 +57,17 @@ export const createResource = async (req, res) => {
       price,
       discountPrice,
       quantity,
-      format: {
-        url: formatUrl,
-        type: formatType || "application/octet-stream",
+      file: {
+        url: fileUrl,
+        type: fileType
       },
-      category,
-      subCategory,
-      thumbnail: thumbnail,
-      formatUrl,
+      thumbnail,
+      country,
+      states: states || [],
+      resourceType: resourceType || [],
       createdBy,
       status,
-      practiceAreas
+      practiceAreas: practiceAreas || []
     });
 
     generateResponse(res, 201, true, "Resource created successfully", resource);
@@ -74,62 +76,76 @@ export const createResource = async (req, res) => {
   }
 };
 
-
 export const getAllResources = async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
-  const status = req.query.status;
-  const sellerId = req.query.sellerId;
-  const categoryName = req.query.categoryName ? req.query.categoryName.toLowerCase() : null;
-  const price = req.query.price ? req.query.price.map(Number) : null;
-  const practiceAreas = req.query.practiceAreas;
-  const formatType = req.query.formatType;
-  const search = req.query.search ? req.query.search.toLowerCase() : null;
+  const {
+    status,
+    sellerId,
+    resourceType,
+    price,
+    practiceAreas,
+    fileType,
+    search,
+    country,
+    states
+  } = req.query;
 
   try {
-    const { data, pagination } = await getAllResourcesService(page, limit, skip, status, sellerId, categoryName, price, practiceAreas, formatType, search);
+    const priceRange = price ? price.split(',').map(Number) : null;
+    const statesArray = states ? states.split(',') : null;
+    const practiceAreasArray = practiceAreas ? practiceAreas.split(',') : null;
+    const resourceTypeArray = resourceType ? resourceType.split(',') : null;
+
+    const { data, pagination } = await getAllResourcesService(
+      page,
+      limit,
+      skip,
+      status,
+      sellerId,
+      resourceTypeArray,
+      priceRange,
+      practiceAreasArray,
+      fileType,
+      search?.toLowerCase(),
+      country,
+      statesArray
+    );
+
     return res.status(200).json({
       success: true,
       message: 'Fetched resources',
       data,
       pagination
     });
+  } catch (error) {
+    next(error);
   }
-
-  catch (error) {
-    next(error)
-  }
-}
-
+};
 
 export const getResourceById = async (req, res, next) => {
   const resourceId = req.params.id;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
   const skip = (page - 1) * limit;
+  
   try {
     const { data, pagination } = await getResourceByIdService(resourceId, page, limit, skip);
-
     return res.status(200).json({
       success: true,
       message: "Fetched resource successfully",
       data,
       pagination
     });
-  }
-
-  catch (error) {
+  } catch (error) {
     if (error.message === "Resource not found") {
       generateResponse(res, 404, false, error.message, null);
-    }
-
-    else {
+    } else {
       next(error);
     }
   }
 };
-
 
 export const updateResource = async (req, res) => {
   try {
@@ -140,7 +156,6 @@ export const updateResource = async (req, res) => {
   }
 };
 
-
 export const deleteResource = async (req, res) => {
   try {
     const deleted = await deleteResourceService(req.params.id, req.user);
@@ -150,13 +165,10 @@ export const deleteResource = async (req, res) => {
   }
 };
 
-
 export const getSellerResources = async (req, res) => {
   try {
     const myId = req.user._id;
-
     const resources = await getSellerResourcesService(myId);
-
     generateResponse(res, 200, true, "Fetched seller resources successfully", resources);
   } catch (error) {
     generateResponse(res, 500, false, "Failed to fetch seller resources", error.message);
