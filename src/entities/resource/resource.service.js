@@ -7,73 +7,84 @@ export const createResourceService = async (data) => {
   return await resource.save();
 };
 
-
-export const getAllResourcesService = async (page, limit, skip, status, sellerId, categoryName, price, practiceAreas, formatType, search) => {
-
+export const getAllResourcesService = async (
+  page, 
+  limit, 
+  skip, 
+  status, 
+  sellerId, 
+  resourceType, 
+  price, 
+  practiceAreas, 
+  fileType, 
+  search,
+  country,
+  states
+) => {
   const query = sellerId ? { createdBy: sellerId } : {};
-  if (status) query.status = new RegExp(`^${status}$`, 'i'); // allows full, case insensitive query
-  if (formatType) query["format.type"] = new RegExp(`^${formatType}$`, 'i');
-  if (price) query.resultantPrice = { $gte: price[0], $lte: price[1] }
+  
+  if (status) query.status = new RegExp(`^${status}$`, 'i');
+  if (fileType) query["file.type"] = new RegExp(`^${fileType}$`, 'i');
+  if (price) query.resultantPrice = { $gte: price[0], $lte: price[1] };
+  if (country) query.country = new RegExp(`^${country}$`, 'i');
+  if (states) query.states = { $in: states.map(state => new RegExp(`^${state}$`, 'i')) };
 
   if (practiceAreas) {
-    query.practiceAreas = typeof practiceAreas === "string" ? new RegExp(`^${practiceAreas}$`, 'i') : {
-      $in: practiceAreas.map(area => new RegExp(`^${area}$`, 'i'))
-    };
+    query.practiceAreas = typeof practiceAreas === "string" 
+      ? new RegExp(`^${practiceAreas}$`, 'i') 
+      : { $in: practiceAreas.map(area => new RegExp(`^${area}$`, 'i')) };
   }
 
-  const resources = (
-    await Resource.find(query)
-      .select("-__v -updatedAt")
-      .populate("category", "name description")
-      .populate("subCategory", "name description")
-      .populate("createdBy", "firstName lastName email profileImage")
-      .sort({ createdAt: -1 })
-      .lean()
-  )
+  if (resourceType) {
+    query.resourceType = typeof resourceType === "string"
+      ? new RegExp(`^${resourceType}$`, 'i')
+      : { $in: resourceType.map(type => new RegExp(`^${type}$`, 'i')) };
+  }
+
+  const resources = await Resource.find(query)
+    .select("-__v -updatedAt")
+    .populate("createdBy", "firstName lastName email profileImage")
+    .sort({ createdAt: -1 })
+    .lean();
 
   const filteredResources = resources.filter((resource) => {
-
     const title = resource.title.toLowerCase();
     const description = resource.description?.toLowerCase() || "";
-    const categoryNameLocal = resource.category.name.toLowerCase()
-    const subCategoryName = resource.subCategory.name.toLowerCase()
     const practiceAreasList = resource.practiceAreas?.map(p => p.toLowerCase()) || [];
+    const resourceTypes = resource.resourceType?.map(t => t.toLowerCase()) || [];
 
-    const matchedSearch =
-      search ?
-        title.includes(search) ||
+    const matchedSearch = search
+      ? title.includes(search) ||
         description.includes(search) ||
-        categoryNameLocal.includes(search) ||
-        subCategoryName.includes(search) ||
-        practiceAreasList.some(area => area.includes(search))
-        : true;
+        practiceAreasList.some(area => area.includes(search)) ||
+        resourceTypes.some(type => type.includes(search))
+      : true;
 
-    const matchedCategoryName = categoryName ? categoryNameLocal.includes(categoryName) : true;
+    return matchedSearch;
+  });
 
-    return matchedSearch && matchedCategoryName;
-  })
-
-  const modifiedResources = await Promise.all(filteredResources.map(async (resource) => {
-    const reviewInfo = await Review.aggregate([
-      { $match: { resourceId: new mongoose.Types.ObjectId(resource._id) } },
-      {
-        $group: {
-          _id: "$resourceId",
-          averageRating: { $avg: "$rating" },
-          totalReviews: { $sum: 1 }
+  const modifiedResources = await Promise.all(
+    filteredResources.map(async (resource) => {
+      const reviewInfo = await Review.aggregate([
+        { $match: { resourceId: new mongoose.Types.ObjectId(resource._id) } },
+        {
+          $group: {
+            _id: "$resourceId",
+            averageRating: { $avg: "$rating" },
+            totalReviews: { $sum: 1 }
+          }
         }
-      }
-    ])
+      ]);
 
-    resource.averageRating = reviewInfo[0]?.averageRating || 0;
-    resource.totalReviews = reviewInfo[0]?.totalReviews || 0;
+      resource.averageRating = reviewInfo[0]?.averageRating || 0;
+      resource.totalReviews = reviewInfo[0]?.totalReviews || 0;
 
-    return resource;
-  }))
+      return resource;
+    })
+  );
 
   const totalItems = modifiedResources.length;
   const totalPages = Math.ceil(totalItems / limit);
-
   const paginatedResources = modifiedResources.slice(skip, skip + limit);
 
   return {
@@ -84,21 +95,16 @@ export const getAllResourcesService = async (page, limit, skip, status, sellerId
       totalItems,
       itemsPerPage: limit
     }
-  }
+  };
 };
 
-
 export const getResourceByIdService = async (id, page, limit, skip) => {
-  const resource = (
-    await Resource.findById(id)
-      .select("-__v -updatedAt")
-      .populate("category", "name description")
-      .populate("subCategory", "name description")
-      .populate("createdBy", "firstName lastName email profileImage")
-      .lean()
-  )
+  const resource = await Resource.findById(id)
+    .select("-__v -updatedAt")
+    .populate("createdBy", "firstName lastName email profileImage")
+    .lean();
 
-  if (!resource) throw new Error("Resource not found")
+  if (!resource) throw new Error("Resource not found");
 
   const [reviewInfo, reviews] = await Promise.all([
     Review.aggregate([
@@ -111,7 +117,6 @@ export const getResourceByIdService = async (id, page, limit, skip) => {
         }
       }
     ]),
-
     Review.find({ resourceId: resource._id })
       .select("-__v -updatedAt -resourceId")
       .populate("userId", "firstName lastName email profileImage")
@@ -119,7 +124,7 @@ export const getResourceByIdService = async (id, page, limit, skip) => {
       .skip(skip)
       .limit(limit)
       .lean()
-  ])
+  ]);
 
   const totalReviews = reviewInfo[0]?.totalReviews || 0;
 
@@ -132,28 +137,21 @@ export const getResourceByIdService = async (id, page, limit, skip) => {
     totalPages: Math.ceil(totalReviews / limit),
     totalItems: totalReviews,
     itemsPerPage: limit
-  }
+  };
 
   return {
     data: resource,
     pagination
-  }
+  };
 };
 
-
 export const updateResourceService = async (id, updateData, user) => {
-
   if (user.role === "ADMIN") {
-    if (updateData.status && user.role !== "ADMIN") {
-      throw new Error("Only admin can update the status of a resource");
-    }
-
     const updated = await Resource.findByIdAndUpdate(id, updateData, { new: true });
     if (!updated) throw new Error("Resource not found");
     return updated;
   }
 
-  // Seller: can only update their own resources (not status)
   if (user.role === "SELLER") {
     const resource = await Resource.findById(id);
     if (!resource) throw new Error("Resource not found");
@@ -173,23 +171,19 @@ export const updateResourceService = async (id, updateData, user) => {
   throw new Error("Unauthorized role");
 };
 
-
 export const deleteResourceService = async (id, user) => {
   const resource = await Resource.findById(id);
   if (!resource) throw new Error("Resource not found or already deleted");
 
-  // Admin can delete any resource
   if (user.role === "ADMIN") {
     await resource.deleteOne();
     return resource;
   }
 
-  // Seller can only delete their own resources
   if (user.role === "SELLER") {
     if (!resource.createdBy.equals(user._id)) {
       throw new Error("Sellers can only delete their own resources");
     }
-
     await resource.deleteOne();
     return resource;
   }
@@ -197,15 +191,9 @@ export const deleteResourceService = async (id, user) => {
   throw new Error("Unauthorized role");
 };
 
-
 export const getSellerResourcesService = async (myId) => {
   try {
-    const resources = await Resource.find({ createdBy: myId })
-      .populate("category", "name")
-      .populate("subCategory", "name")
-      .sort({ createdAt: -1 });
-
-    return resources;
+    return await Resource.find({ createdBy: myId }).sort({ createdAt: -1 });
   } catch (error) {
     throw new Error("Error fetching seller resources: " + error.message);
   }
