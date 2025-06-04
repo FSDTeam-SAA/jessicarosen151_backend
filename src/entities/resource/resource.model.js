@@ -47,7 +47,6 @@ const resourceSchema = new Schema(
         required: true
       }
     },
-    
     thumbnail: {
       type: String,
     },
