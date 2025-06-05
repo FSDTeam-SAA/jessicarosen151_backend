@@ -28,6 +28,6 @@ router.use('/v1/contact', contactRoutes)
 router.use('/v1/message', messageRoutes);
 router.use('/v1/cart', cartRoutes);
 router.use('/v1/reviews', reviewRoutes);
-router.use('/v1/application',applicationRoutes)
+router.use('/v1/seller',applicationRoutes)
 
 export default router;
