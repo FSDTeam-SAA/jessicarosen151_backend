@@ -19,7 +19,7 @@ router
 
 router.
   route("/")
-  .post(verifyToken, adminSellerMiddleware, multerUpload([{ name: "format", maxCount: 1 }, { name: "thumbnail", maxCount: 1 }]), createResource);
+  .post(verifyToken, adminSellerMiddleware, multerUpload([{ name: "file", maxCount: 1 }, { name: "thumbnail", maxCount: 1 }]), createResource);
 
 
 router
