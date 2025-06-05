@@ -10,14 +10,23 @@ import { generateResponse } from "../../lib/responseFormate.js";
 
 export const addToCart = async (req, res) => {
   try {
-    const userId = req.user?._id;
+    const userId = req.user._id;
     const { resourceId, quantity } = req.body;
+
+    // Validate if the quantity and resourceId are correct
+    if (!resourceId || !quantity || quantity < 1) {
+      return generateResponse(res, 400, false, "Invalid resourceId or quantity");
+    }
+
+    // Call service to add item to cart
     const updatedCart = await addToCartService(userId, resourceId, quantity);
-    generateResponse(res, 200, true, "Item added to cart", updatedCart);
+
+    return generateResponse(res, 200, true, "Item added to cart", updatedCart);
   } catch (error) {
-    generateResponse(res, 400, false, "Failed to add item to cart", error.message);
+    return generateResponse(res, 400, false, "Failed to add item to cart", error.message);
   }
 };
+
 
 
 export const getCartDetails = async (req, res) => {

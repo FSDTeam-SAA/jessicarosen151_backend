@@ -15,12 +15,10 @@ const resourceSchema = new Schema(
       type: String,
       default: ""
     }],
-
     resourceType: {
       type: [String],
       default: []
     },
-
     description: {
       type: String,
       default: ""
@@ -40,11 +38,9 @@ const resourceSchema = new Schema(
     file: {
       url: {
         type: String,
-        required: true
       },
       type: {
         type: String,
-        required: true
       }
     },
     thumbnail: {
