@@ -1,56 +1,48 @@
 import RoleType from "../../../lib/types.js";
 import User from "../../auth/auth.model.js";
 
-export const createApplication = async (data) => {
+// Promote user to seller if email exists
+export const promoteToSellerIfUserExists = async (email) => {
+  const user = await User.findOne({ email });
 
-    const existingEmail = await User.findOne({ email: data.email })
-    if (existingEmail) {
-        throw new Error('Email already exists');
-    }
+  if (!user) {
+    throw new Error('User not found');
+  }
+  if( user.role === RoleType.SELLER) {
+    throw new Error('User is already a seller');
+  }
+  if (user.role === RoleType.ADMIN) {
+    throw new Error('Admin cannot be promoted to seller');
+  }
 
-    // create new application 
+  if (user.role === RoleType.USER) {
+    user.role = RoleType.SELLER;
+    await user.save();
+  }
 
-    const user =User.create({
-        ...data,
-        role: RoleType.USER,
-        sellerStatus: 'pending'
-    })
-return user
-   
-  
-    
-
-}
-// Admin: Get all seller applications
-export const getAllSellerApplicationsService = async () => {
-  return await User.find({ sellerStatus: { $in: ['pending', 'rejected'] } }).sort({ createdAt: -1 });
+  return user;
 };
 
+// Get all sellers
+export const getAllSellersService = async () => {
+  return await User.find({ role: RoleType.SELLER }).sort({ createdAt: -1 }).select('-password');
+};
 
-// Admin: Approve seller
-export const approveSellerApplicationService = async (id, status) => {
-  if (!['approved', 'rejected'].includes(status)) {
-    throw new Error("Invalid status. Must be either 'approved' or 'rejected'");
+// Get a single seller by ID
+export const getSellerByIdService = async (id) => {
+  const seller = await User.findOne({ _id: id, role: RoleType.SELLER }).select('-password');
+  if (!seller) {
+    throw new Error('Seller not found');
   }
+  return seller;
+};
 
-  const updateData = {
-    sellerStatus: status
-  };
-
-  if (status === 'approved') {
-    updateData.role = RoleType.SELLER;
+// Delete a seller
+export const deleteSellerByIdService = async (id) => {
+  const deleted = await User.findOneAndDelete({ _id: id, role: RoleType.SELLER });
+  if (!deleted) {
+    throw new Error('Seller not found or already deleted');
   }
-
-  const updatedUser = await User.findByIdAndUpdate(
-    id,
-    updateData,
-    { new: true }
-  ).select('-password');
-
-  if (!updatedUser) {
-    throw new Error("User not found or update failed");
-  }
-
-  return updatedUser;
+  return deleted;
 };
 

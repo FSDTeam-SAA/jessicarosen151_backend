@@ -1,10 +1,25 @@
 import express from 'express';
-import { applyToBecomeSellerController, getAllSellerApplicationsController, updateSellerApplicationStatusController } from './application.controller.js';
-import { adminMiddleware, verifyToken } from '../../../core/middlewares/authMiddleware.js';
+import {
+  promoteToSellerController,
+  getAllSellersController,
+  getSellerByIdController,
+  deleteSellerByIdController
+} from './application.controller.js';
+import { verifyToken } from '../../../core/middlewares/authMiddleware.js';
+
 const router = express.Router();
 
-router.post('/apply',applyToBecomeSellerController)
-router.get('/admin/applications',verifyToken,adminMiddleware,getAllSellerApplicationsController)
-router.patch('/admin/applications/:id',verifyToken,adminMiddleware,updateSellerApplicationStatusController)
+router
+  .route('/')
+  .get(verifyToken, getAllSellersController); 
+
+router
+  .route('/apply')
+  .post(verifyToken, promoteToSellerController); 
+
+router
+  .route('/:id')
+  .get(verifyToken, getSellerByIdController)      
+  .delete(verifyToken, deleteSellerByIdController); 
 
 export default router;
