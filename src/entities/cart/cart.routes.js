@@ -21,7 +21,7 @@ router
 
 router
   .route("/item/:resourceId")
-  .patch(verifyToken, updateCartItem)   
+  .put(verifyToken, updateCartItem)   
   .delete(verifyToken, removeCartItem); 
 
 
