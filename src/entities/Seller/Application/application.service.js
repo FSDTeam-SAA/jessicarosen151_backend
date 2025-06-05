@@ -15,7 +15,6 @@ export const createApplication = async (data) => {
         role: RoleType.USER,
         sellerStatus: 'pending'
     })
-
 return user
    
   
