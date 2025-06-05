@@ -16,7 +16,10 @@ export const addToCartService = async (userId, resourceId, quantity = 1) => {
     throw new Error("Resource not found or not available");
   }
 
-  const effectivePrice = resource.discountPrice ?? resource.price;
+  // Ensure the discount price is less than the regular price if available
+  const effectivePrice = resource.discountPrice && resource.discountPrice < resource.price
+    ? resource.discountPrice
+    : resource.price;
 
   let cart = await Cart.findOne({ user: userId });
 
@@ -31,12 +34,18 @@ export const addToCartService = async (userId, resourceId, quantity = 1) => {
     if (existingItem) {
       const newQuantity = existingItem.quantity + quantity;
 
-      if (newQuantity > 50) {
-        throw new Error("Total quantity for this item exceeds the limit (50)");
+      // Ensure the total quantity does not exceed available stock
+      if (newQuantity > resource.quantity) {
+        throw new Error(`Total quantity for this item exceeds available stock (${resource.quantity})`);
       }
 
       existingItem.quantity = newQuantity;
+      existingItem.price = effectivePrice; // Reapply price in case it was updated
     } else {
+      // Ensure we don’t add more than available stock
+      if (quantity > resource.quantity) {
+        throw new Error(`You can only add up to ${resource.quantity} items to the cart`);
+      }
       cart.items.push({ resource: resourceId, quantity, price: effectivePrice });
     }
   }
@@ -44,6 +53,7 @@ export const addToCartService = async (userId, resourceId, quantity = 1) => {
   await cart.save();
   return cart;
 };
+
 
 
 export const getCartDetailsService = async (userId) => {
@@ -103,13 +113,20 @@ export const updateCartItemService = async (userId, resourceId, quantity) => {
   const item = cart.items.find(item => item.resource.toString() === resourceId);
   if (!item) throw new Error("Item not found in cart");
 
+  // Ensure quantity is treated as a number
+  quantity = Number(quantity);
+
   if (quantity < 1 || quantity > 50) {
     throw new Error("Quantity must be between 1 and 50");
   }
 
-  item.quantity = quantity;
+  // Increment the quantity properly
+  item.quantity += quantity;
+
   return await cart.save();
 };
+
+
 
 
 export const removeCartItemService = async (userId, resourceId) => {
