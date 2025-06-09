@@ -5,9 +5,12 @@ import {
   updateResourceService,
   deleteResourceService,
   getSellerResourcesService,
+  getMostPopularResources,
+  getTopSellingResources
 } from "./resource.service.js";
 import { generateResponse } from "../../lib/responseFormate.js";
 import { cloudinaryUpload } from "../../lib/cloudinaryUpload.js";
+
 
 export const createResource = async (req, res) => {
   try {
@@ -76,6 +79,7 @@ export const createResource = async (req, res) => {
   }
 };
 
+
 export const getAllResources = async (req, res, next) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -128,7 +132,6 @@ export const getAllResources = async (req, res, next) => {
 };
 
 
-
 export const getResourceById = async (req, res, next) => {
   const resourceId = req.params.id;
   const page = parseInt(req.query.page) || 1;
@@ -152,6 +155,7 @@ export const getResourceById = async (req, res, next) => {
   }
 };
 
+
 export const updateResource = async (req, res) => {
   try {
     const updated = await updateResourceService(req.params.id, req.body, req.user);
@@ -160,6 +164,7 @@ export const updateResource = async (req, res) => {
     generateResponse(res, 400, false, "Failed to update resource", error.message);
   }
 };
+
 
 export const deleteResource = async (req, res) => {
   try {
@@ -170,6 +175,7 @@ export const deleteResource = async (req, res) => {
   }
 };
 
+
 export const getSellerResources = async (req, res) => {
   try {
     const myId = req.user._id;
@@ -177,5 +183,47 @@ export const getSellerResources = async (req, res) => {
     generateResponse(res, 200, true, "Fetched seller resources successfully", resources);
   } catch (error) {
     generateResponse(res, 500, false, "Failed to fetch seller resources", error.message);
+  }
+};
+
+
+export const exploreTopSellingResources = async (req, res) => {
+  try {
+    const { country } = req.query;
+    if (!country) {
+      return res
+        .status(400)
+        .json(generateResponse(false, 'Country is required'));
+    }
+
+    const resources = await getTopSellingResources(country);
+    return res.status(200).json(
+      generateResponse(true, 'Top selling resources fetched', resources)
+    );
+  } catch (error) {
+    return res.status(500).json(
+      generateResponse(false, 'Something went wrong', null, error.message)
+    );
+  }
+};
+
+
+export const exploreMostPopularResources = async (req, res) => {
+  try {
+    const { country } = req.query;
+    if (!country) {
+      return res
+        .status(400)
+        .json(generateResponse(false, 'Country is required'));
+    }
+
+    const resources = await getMostPopularResources(country);
+    return res.status(200).json(
+      generateResponse(true, 'Most popular resources fetched', resources)
+    );
+  } catch (error) {
+    return res.status(500).json(
+      generateResponse(false, 'Something went wrong', null, error.message)
+    );
   }
 };
