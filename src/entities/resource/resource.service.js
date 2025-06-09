@@ -2,10 +2,12 @@ import mongoose from "mongoose";
 import Review from "../review/review.model.js";
 import Resource from "./resource.model.js";
 
+
 export const createResourceService = async (data) => {
   const resource = new Resource(data);
   return await resource.save();
 };
+
 
 export const getAllResourcesService = async (
   page, 
@@ -122,6 +124,7 @@ export const getAllResourcesService = async (
   };
 };
 
+
 export const getResourceByIdService = async (id, page, limit, skip) => {
   const resource = await Resource.findById(id)
     .select("-__v -updatedAt")
@@ -169,6 +172,7 @@ export const getResourceByIdService = async (id, page, limit, skip) => {
   };
 };
 
+
 export const updateResourceService = async (id, updateData, user) => {
   if (user.role === "ADMIN") {
     const updated = await Resource.findByIdAndUpdate(id, updateData, { new: true });
@@ -195,6 +199,7 @@ export const updateResourceService = async (id, updateData, user) => {
   throw new Error("Unauthorized role");
 };
 
+
 export const deleteResourceService = async (id, user) => {
   const resource = await Resource.findById(id);
   if (!resource) throw new Error("Resource not found or already deleted");
@@ -215,10 +220,69 @@ export const deleteResourceService = async (id, user) => {
   throw new Error("Unauthorized role");
 };
 
+
 export const getSellerResourcesService = async (myId) => {
   try {
     return await Resource.find({ createdBy: myId }).sort({ createdAt: -1 });
   } catch (error) {
     throw new Error("Error fetching seller resources: " + error.message);
   }
+};
+
+
+export const getTopSellingResources = async (country, limit = 10) => {
+  return await Resource.find({ country, status: 'approved' })
+    .sort({ soldCount: -1 })
+    .limit(limit)
+    .populate('category subCategory createdBy');
+};
+
+
+export const getMostPopularResources = async (country, limit = 10) => {
+  const resources = await Resource.aggregate([
+    {
+      $match: {
+        country,
+        status: 'approved',
+      },
+    },
+    {
+      $addFields: {
+        popularityScore: { $multiply: ['$averageRating', '$soldCount'] },
+      },
+    },
+    {
+      $sort: { popularityScore: -1 },
+    },
+    { $limit: limit },
+    {
+      $lookup: {
+        from: 'categories',
+        localField: 'category',
+        foreignField: '_id',
+        as: 'category',
+      },
+    },
+    {
+      $lookup: {
+        from: 'subcategories',
+        localField: 'subCategory',
+        foreignField: '_id',
+        as: 'subCategory',
+      },
+    },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'createdBy',
+        foreignField: '_id',
+        as: 'createdBy',
+      },
+    },
+    { $unwind: '$category' },
+    { $unwind: '$subCategory' },
+    { $unwind: '$createdBy' },
+  ]);
+
+  return resources;
 };

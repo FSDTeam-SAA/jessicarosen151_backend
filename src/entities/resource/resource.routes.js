@@ -1,5 +1,5 @@
 import express from "express";
-import { createResource, getAllResources, getResourceById, updateResource, deleteResource, getSellerResources } from "./resource.controller.js";
+import { createResource, getAllResources, getResourceById, updateResource, deleteResource, getSellerResources, exploreTopSellingResources, exploreMostPopularResources } from "./resource.controller.js";
 import { adminSellerMiddleware, verifyToken } from "../../core/middlewares/authMiddleware.js";
 import { multerUpload } from "../../core/middlewares/multer.js";
 
@@ -15,6 +15,16 @@ router
 router
   .route("/get-all-resources")
   .get(getAllResources);
+
+  
+router
+  .route("/top-selling")
+  .get(exploreTopSellingResources);
+
+
+router
+  .route("/most-popular")
+  .get(exploreMostPopularResources);
 
 
 router.
