@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Review from "../review/review.model.js";
 import Resource from "./resource.model.js";
+import Order from "../order/order.model.js";
 
 
 export const createResourceService = async (data) => {
@@ -231,11 +232,64 @@ export const getSellerResourcesService = async (myId) => {
 
 
 export const getTopSellingResources = async (country, limit = 10) => {
-  return await Resource.find({ country, status: 'approved' })
-    .sort({ soldCount: -1 })
-    .limit(limit)
-    .populate('category subCategory createdBy');
+  const pipeline = [
+    // Unwind each order item
+    { $unwind: "$items" },
+
+    // Lookup the resource
+    {
+      $lookup: {
+        from: "resources",
+        localField: "items.resource",
+        foreignField: "_id",
+        as: "resource",
+      },
+    },
+    { $unwind: "$resource" },
+
+    // Filter by country and approved status
+    {
+      $match: {
+        "resource.country": country,
+        "resource.status": "approved",
+      },
+    },
+
+    // Group by resource ID and sum quantity sold
+    {
+      $group: {
+        _id: "$resource._id",
+        totalSold: { $sum: "$items.quantity" },
+        resource: { $first: "$resource" },
+      },
+    },
+
+    // Sort by total sold descending
+    { $sort: { totalSold: -1 } },
+
+    // Limit result count
+    { $limit: limit },
+
+    // Final project
+    {
+      $project: {
+        _id: 0,
+        resource: 1,
+        totalSold: 1,
+      },
+    },
+  ];
+
+  const topSelling = await Order.aggregate(pipeline);
+
+  // Optionally populate createdBy, category, subCategory (if needed)
+  const populated = await Resource.populate(topSelling, {
+    path: "resource.createdBy resource.category resource.subCategory",
+  });
+
+  return populated;
 };
+
 
 
 export const getMostPopularResources = async (country, limit = 10) => {
@@ -246,31 +300,65 @@ export const getMostPopularResources = async (country, limit = 10) => {
         status: 'approved',
       },
     },
+    // Lookup average rating from reviews
+    {
+      $lookup: {
+        from: 'reviews',
+        localField: '_id',
+        foreignField: 'resourceId',
+        as: 'reviews',
+      },
+    },
     {
       $addFields: {
-        popularityScore: { $multiply: ['$averageRating', '$soldCount'] },
+        averageRating: { $avg: '$reviews.rating' },
+      },
+    },
+    // Lookup total sold count from orders
+    {
+      $lookup: {
+        from: 'orders',
+        let: { resourceId: '$_id' },
+        pipeline: [
+          { $unwind: '$items' },
+          {
+            $match: {
+              $expr: { $eq: ['$items.resource', '$$resourceId'] },
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalSold: { $sum: '$items.quantity' },
+            },
+          },
+        ],
+        as: 'soldData',
+      },
+    },
+    {
+      $addFields: {
+        soldCount: {
+          $ifNull: [{ $arrayElemAt: ['$soldData.totalSold', 0] }, 0],
+        },
+      },
+    },
+    // Calculate popularity score
+    {
+      $addFields: {
+        popularityScore: {
+          $multiply: [
+            { $ifNull: ['$averageRating', 0] },
+            { $ifNull: ['$soldCount', 0] },
+          ],
+        },
       },
     },
     {
       $sort: { popularityScore: -1 },
     },
     { $limit: limit },
-    {
-      $lookup: {
-        from: 'categories',
-        localField: 'category',
-        foreignField: '_id',
-        as: 'category',
-      },
-    },
-    {
-      $lookup: {
-        from: 'subcategories',
-        localField: 'subCategory',
-        foreignField: '_id',
-        as: 'subCategory',
-      },
-    },
+    // Populate createdBy only
     {
       $lookup: {
         from: 'users',
@@ -279,10 +367,15 @@ export const getMostPopularResources = async (country, limit = 10) => {
         as: 'createdBy',
       },
     },
-    { $unwind: '$category' },
-    { $unwind: '$subCategory' },
-    { $unwind: '$createdBy' },
+    { $unwind: { path: '$createdBy', preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        reviews: 0,
+        soldData: 0,
+      },
+    },
   ]);
 
   return resources;
 };
+
