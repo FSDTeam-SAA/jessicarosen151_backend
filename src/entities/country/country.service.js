@@ -1,10 +1,20 @@
 import Country from "./country.model.js";
 
 export const createCountryService = async ({ countryName, states }) => {
-  const existing = await Country.findOne({ countryName: countryName.trim() });
-  if (existing) throw new Error('Country already exists.');
+  const trimmedName = countryName.trim();
 
-  const country = new Country({ countryName, states });
+  const existing = await Country.findOne({ countryName: trimmedName });
+  if (existing) {
+    throw new Error('Country already exists.');
+  }
+
+  const normalizedStates = Array.isArray(states) ? states : [states];
+
+  const country = new Country({
+    countryName: trimmedName,
+    states: normalizedStates
+  });
+
   return await country.save();
 };
 

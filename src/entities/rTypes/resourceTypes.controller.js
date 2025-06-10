@@ -4,9 +4,11 @@ import { createResourceTypeService, getAllResourceTypesService, getResourceTypeB
 
 export const createResourceType = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { resourceTypeName, description } = req.body;
+    const createdBy = req.user._id;
 
-    const resourceType = await createResourceTypeService({ name, description });
+    const resourceType = await createResourceTypeService({ resourceTypeName, description, createdBy });
+
     generateResponse(res, 201, true, 'Resource Type created successfully', resourceType);
   } catch (error) {
     generateResponse(res, 400, false, 'Failed to create Resource Type', error.message);
