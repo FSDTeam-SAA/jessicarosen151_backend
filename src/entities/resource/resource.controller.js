@@ -21,6 +21,7 @@ export const createResource = async (req, res) => {
       price, 
       discountPrice, 
       quantity, 
+      format,
       country, 
       states, 
       resourceType, 
@@ -60,6 +61,7 @@ export const createResource = async (req, res) => {
       price,
       discountPrice,
       quantity,
+      format,
       file: {
         url: fileUrl,
         type: fileType
@@ -191,19 +193,13 @@ export const exploreTopSellingResources = async (req, res) => {
   try {
     const { country } = req.query;
     if (!country) {
-      return res
-        .status(400)
-        .json(generateResponse(false, 'Country is required'));
+      return generateResponse(res, 400, false, 'Country is required');
     }
 
     const resources = await getTopSellingResources(country);
-    return res.status(200).json(
-      generateResponse(true, 'Top selling resources fetched', resources)
-    );
+    generateResponse(res, 200, true, 'Top selling resources fetched', resources);
   } catch (error) {
-    return res.status(500).json(
-      generateResponse(false, 'Something went wrong', null, error.message)
-    );
+    generateResponse(res, 500, false, 'Failed to fetch top selling resources', error.message);
   }
 };
 
@@ -212,18 +208,13 @@ export const exploreMostPopularResources = async (req, res) => {
   try {
     const { country } = req.query;
     if (!country) {
-      return res
-        .status(400)
-        .json(generateResponse(false, 'Country is required'));
+      return generateResponse(res, 400, false, 'Country is required');
     }
 
     const resources = await getMostPopularResources(country);
-    return res.status(200).json(
-      generateResponse(true, 'Most popular resources fetched', resources)
-    );
+    generateResponse(res, 200, true, 'Most popular resources fetched', resources);
   } catch (error) {
-    return res.status(500).json(
-      generateResponse(false, 'Something went wrong', null, error.message)
-    );
+    generateResponse(res, 500, false, 'Failed to fetch most popular resources', error.message);
   }
 };
+

@@ -11,8 +11,7 @@ const resourceTypesSchema = new Schema(
     description: {
       type: String,
       default: ""
-    },
-    
+    }
   },
   {
     timestamps: true

@@ -35,6 +35,11 @@ const resourceSchema = new Schema(
       type: Number,
       required: true
     },
+    format: {
+      type: String,
+      enum: ["Pdf", "Video", "Audio", "Image", "Microsoft Word", "Ebook", "Easel", "Powerpoint", "Google Apps", "Digital", "other"],
+      required: true
+    },
     file: {
       url: {
         type: String,
@@ -94,14 +99,6 @@ resourceSchema.pre("validate", async function (next) {
   next();
 });
 
-// calculate resultant price before saving
-resourceSchema.pre("save", function (next) {
-  this.resultantPrice =
-    this.discountPrice > 0 && this.discountPrice < this.price
-      ? this.price - this.discountPrice
-      : this.price;
-  next();
-});
 
 const Resource = mongoose.model("Resource", resourceSchema);
 export default Resource;
