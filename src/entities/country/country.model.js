@@ -11,8 +11,7 @@ const countrySchema = new Schema(
     states: {
       type: [String],
       default: []
-    },
-
+    }
   },
   {
     timestamps: true

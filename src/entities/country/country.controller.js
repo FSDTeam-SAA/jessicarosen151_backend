@@ -5,10 +5,11 @@ import { createCountryService, getAllCountriesService, getCountryByIdService, up
 export const createCountry = async (req, res) => {
   try {
     const { countryName, states } = req.body;
+
     const country = await createCountryService({ countryName, states });
-    generateResponse(res, 201, true, 'Country created successfully', country);
+    return generateResponse(res, 201, true, 'Country created successfully', country);
   } catch (error) {
-    generateResponse(res, 400, false, 'Failed to create Country', error.message);
+    return generateResponse(res, 400, false, 'Failed to create Country', error.message);
   }
 };
 

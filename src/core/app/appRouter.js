@@ -21,7 +21,7 @@ router.use('/v1/user', userRoutes);
 router.use('/v1/practice-area', practiceAreaRoutes);
 router.use('/v1/country-state', countryRoutes);
 router.use('/v1/resource', resourceRoutes);
-router.use('/v1/resource-types', resourceTypesRoutes);
+router.use('/v1/resource-type', resourceTypesRoutes);
 router.use('/v1/blog', blogRoutes);
 router.use('/v1/promo-codes', promoRoutes);
 router.use('/v1/contact', contactRoutes)
