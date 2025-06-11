@@ -9,7 +9,7 @@ import {
 // Promote a user to seller by email
 export const promoteToSellerController = async (req, res) => {
   try {
-    const { email } = req.user.email;
+    const email  = req.user.email;
     const user = await promoteToSellerIfUserExists(email);
     generateResponse(res, 200, true, "User promoted to seller successfully", user);
   } catch (error) {
