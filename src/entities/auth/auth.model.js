@@ -33,11 +33,8 @@ const UserSchema = new mongoose.Schema(
       enum: [RoleType.USER, RoleType.ADMIN, RoleType.SELLER],
     },
 
-    sellerStatus: {
-  type: String,
-  enum: ['pending', 'approved', 'rejected'],
-  default: 'pending',
-},
+    stripeAccountId: { type: String, default: null },
+
 
 
     bio: { type: String, default: '' },
