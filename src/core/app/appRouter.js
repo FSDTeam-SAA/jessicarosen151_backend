@@ -12,7 +12,7 @@ import reviewRoutes from '../../entities/review/review.routes.js';
 import applicationRoutes from '../../entities/Seller/Application/application.routes.js'
 import countryRoutes from '../../entities/country/country.routes.js';
 import resourceTypesRoutes from '../../entities/rTypes/resourceTypes.routes.js'
-
+import sellerOnboardingRoutes from '../../entities/Seller/Stripe-onboard/sellerStripeRoutes.js';
 const router = express.Router();
 
 // Define all your routes here
@@ -29,5 +29,6 @@ router.use('/v1/message', messageRoutes);
 router.use('/v1/cart', cartRoutes);
 router.use('/v1/reviews', reviewRoutes);
 router.use('/v1/seller',applicationRoutes)
+router.use('/v1/stripe',sellerOnboardingRoutes);
 
 export default router;
