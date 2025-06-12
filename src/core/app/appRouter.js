@@ -13,6 +13,7 @@ import applicationRoutes from '../../entities/Seller/Application/application.rou
 import countryRoutes from '../../entities/country/country.routes.js';
 import resourceTypesRoutes from '../../entities/rTypes/resourceTypes.routes.js'
 import sellerOnboardingRoutes from '../../entities/Seller/Stripe-onboard/sellerStripeRoutes.js';
+import paymentRoutes from '../../entities/Payment/payment.routes.js';
 const router = express.Router();
 
 // Define all your routes here
@@ -30,5 +31,6 @@ router.use('/v1/cart', cartRoutes);
 router.use('/v1/reviews', reviewRoutes);
 router.use('/v1/seller',applicationRoutes)
 router.use('/v1/stripe',sellerOnboardingRoutes);
+router.use('/v1/payment',paymentRoutes)
 
 export default router;
