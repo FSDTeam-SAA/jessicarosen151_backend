@@ -58,7 +58,7 @@ const orderSchema = new Schema(
     },
     stripeSessionId: {
       type: String,
-      required: true
+      required: false
     },
     stripePaymentIntentId: {
       type: String,
