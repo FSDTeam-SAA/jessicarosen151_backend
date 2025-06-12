@@ -9,7 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const createCheckoutSession = async (userId) => {
   const cart = await Cart.findOne({ user: userId }).lean();
 
-  console.log(cart);
+//   console.log(cart);
 if (!cart || cart.length === 0) throw new Error('Cart is empty');
 
 
@@ -26,6 +26,7 @@ if (!cart || cart.length === 0) throw new Error('Cart is empty');
     if (!resource) throw new Error('Resource not found');
 
     const seller = await User.findById(resource.createdBy).lean();
+    if (!seller) throw new Error('Seller not found');
     const price = item.price * item.quantity;
     totalAmount += price;
 
@@ -76,10 +77,17 @@ if (!cart || cart.length === 0) throw new Error('Cart is empty');
       orderId: order._id.toString(),
       transferGroup,
     },
+    payment_intent_data: {
+    transfer_group: transferGroup,
+  },
   });
 
   order.stripeSessionId = session.id;
   await order.save();
 
-  return session;
+  return {
+  sessionId: session.id,
+  url: session.url,
+};
+
 };
