@@ -1,73 +1,78 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema } from 'mongoose';
 
 const orderItemSchema = new Schema(
   {
     resource: {
       type: Schema.Types.ObjectId,
-      ref: "Resource",
-      required: true,
+      ref: 'Resource',
+      required: true
     },
     seller: {
       type: Schema.Types.ObjectId,
-      ref: "User", 
-      required: true,
+      ref: 'User',
+      required: true
     },
     quantity: {
       type: Number,
       default: 1,
-      min: 1,
+      min: 1
     },
     price: {
       type: Number,
-      required: true,
+      required: true
     },
     status: {
       type: String,
-      enum: ["processing", "shipped", "delivered", "cancelled"],
-      default: "processing",
-    },
+      enum: ['processing', 'shipped', 'delivered', 'cancelled'],
+      default: 'processing'
+    }
   },
   { _id: false }
 );
-
 
 const orderSchema = new Schema(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: "User", 
-      required: true,
+      ref: 'User',
+      required: true
     },
     items: [orderItemSchema],
     totalAmount: {
       type: Number,
-      required: true,
+      required: true
     },
     paymentMethod: {
       type: String,
-      default: null, 
+      default: null
     },
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid", "failed"],
-      default: "pending",
-    },
-    deliveryMethod: {
-      type: String,
-      default: null, 
+      enum: ['pending', 'paid', 'failed'],
+      default: 'pending'
     },
     orderStatus: {
       type: String,
-      enum: ["processing", "shipped", "delivered", "cancelled"],
-      default: "processing",
+      enum: ['processing', 'delivered', 'cancelled'],
+      default: 'processing'
     },
-    transactionId: {
+    stripeSessionId: {
       type: String,
-      default: null,
+      required: true
     },
+    stripePaymentIntentId: {
+      type: String,
+      default: null
+    },
+    transferGroup: {
+      type: String
+    },
+    
+    deliveredAt: Date,
+    cancelledAt: Date
   },
   { timestamps: true }
 );
 
-const Order = mongoose.model("Order", orderSchema);
+const Order = mongoose.model('Order', orderSchema);
 export default Order;
