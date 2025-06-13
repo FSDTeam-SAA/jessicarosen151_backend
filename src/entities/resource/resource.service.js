@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import Review from "../review/review.model.js";
 import Resource from "./resource.model.js";
-import Order from "../order/order.model.js";
+import Order from "../Payment/order.model.js";
 
 
 export const createResourceService = async (data) => {

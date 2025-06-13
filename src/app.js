@@ -13,10 +13,11 @@ import errorHandler from './core/middlewares/errorMiddleware.js';
 import notFound from './core/middlewares/notFound.js';
 import { globalLimiter } from './lib/limit.js';
 import appRouter from './core/app/appRouter.js';
-
+import bodyParser from 'body-parser';
 // socket import
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { stripeWebhookHandler } from './entities/Payment/stripeWebhook.controller.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -49,6 +50,9 @@ const io = new Server(server, {
 
 // Set up logging middleware
 app.use(morgan('combined'));
+
+app.post('/api/v1/payment/webhook',  bodyParser.raw({type: "*/*"}), stripeWebhookHandler);
+
 
 // Set up body parsing middleware
 app.use(express.json({ limit: '10000kb' }));
