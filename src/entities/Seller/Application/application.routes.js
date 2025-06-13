@@ -5,13 +5,13 @@ import {
   getSellerByIdController,
   deleteSellerByIdController
 } from './application.controller.js';
-import { verifyToken } from '../../../core/middlewares/authMiddleware.js';
+import { adminMiddleware, verifyToken } from '../../../core/middlewares/authMiddleware.js';
 
 const router = express.Router();
 
 router
   .route('/')
-  .get(verifyToken, getAllSellersController); 
+  .get(verifyToken,adminMiddleware, getAllSellersController); 
 
 router
   .route('/apply')
@@ -20,6 +20,6 @@ router
 router
   .route('/:id')
   .get(verifyToken, getSellerByIdController)      
-  .delete(verifyToken, deleteSellerByIdController); 
+  .delete(verifyToken,adminMiddleware, deleteSellerByIdController); 
 
 export default router;
