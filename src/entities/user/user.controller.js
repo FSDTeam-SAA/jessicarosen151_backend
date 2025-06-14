@@ -19,6 +19,8 @@ import {
   deleteUserPDF,
   getUserOrdersSevice,
   getOrderDetailsService,
+  getUserProfilesWithOrderStatsService,
+  getUserProfileWithStatsServiceId,
 
 
 } from "./user.service.js";
@@ -227,3 +229,35 @@ export const getOrderDetails = async (req, res) => {
     generateResponse(res, 500, 'fail', 'Something went wrong', null);
   }
 };
+
+
+export const getUserProfilesWithOrderStats = async (req, res) => {
+  try {
+    const users = await getUserProfilesWithOrderStatsService();
+    generateResponse(res, 200, 'success', 'User profiles fetched successfully', users);
+  } catch (error) {
+    console.error(error);
+    generateResponse(res, 500, 'fail', 'Something went wrong', null);
+  }
+};
+
+
+export const getUserProfilesWithOrderStatsId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const profile = await getUserProfileWithStatsServiceId(id);
+
+    if (!profile) {
+      return generateResponse(res, 404, 'fail', 'User not found', null);
+    }
+
+    generateResponse(res, 200, 'success', 'User profile fetched', profile);
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    generateResponse(res, 500, 'fail', 'Something went wrong', null);
+  }
+};
+
+
+
+
