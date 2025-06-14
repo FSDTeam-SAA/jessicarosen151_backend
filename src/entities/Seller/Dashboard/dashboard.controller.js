@@ -1,5 +1,5 @@
 import { generateResponse } from "../../../lib/responseFormate.js";
-import {  getSellerDashboardSummaryService, getSellerRevenueReportService } from "./dashboard.service.js";
+import {  getSellerDashboardSummaryService, getSellerRevenueReportService, getSellerSalesHistoryService } from "./dashboard.service.js";
 
 
 export const getSellerDashboardSummary = async (req, res) => {
@@ -23,7 +23,17 @@ export const getSellerRevenueReport = async (req, res) => {
 };
 
 
+export const getSellerSalesHistory = async (req, res) => {
+  try {
+    const { search = "" } = req.query;
 
+    const result = await getSellerSalesHistoryService(req.user._id, search.trim());
+
+    generateResponse(res, 200, true, "Seller sales history fetched", result);
+  } catch (error) {
+    generateResponse(res, 500, false, "Failed to fetch  sales", error.message);
+  }
+};
 
 
 
