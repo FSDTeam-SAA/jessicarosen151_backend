@@ -5,14 +5,20 @@ import {
      createMultipleAvatarController,updateMultipleAvatarController,deleteMultipleAvatarController,
      createUserPDFController,updateUserPDFController,deleteUserPDFController,
      getUserOrders,
-     getOrderDetails
+     getOrderDetails,
+     getUserProfilesWithOrderStats,
+     getUserProfilesWithOrderStatsId,
     } from "./user.controller.js";
 import { adminMiddleware,  verifyToken } from "../../core/middlewares/authMiddleware.js";
 import express from "express";
 const router = express.Router();
 
 
+
+
 router.get("/orders", verifyToken, getUserOrders);
+router.get('/all-profiles', verifyToken, adminMiddleware, getUserProfilesWithOrderStats);
+router.get('/all-profiles/:id', verifyToken, adminMiddleware, getUserProfilesWithOrderStatsId);
 
 
 
