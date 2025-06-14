@@ -4,6 +4,7 @@ import User from "../auth/auth.model.js";
 import RoleType from "../../lib/types.js";
 import fs from "fs";
 import Order from "../Payment/order.model.js";
+import mongoose from "mongoose";
 
 
 // Get all users
@@ -387,4 +388,118 @@ export const getOrderDetailsService = async (orderId, userId) => {
 
   return order;
 };
+
+
+
+export const getUserProfilesWithOrderStatsService = async () => {
+  // Step 1: Get all users with role USER
+  const users = await User.find({ role: 'USER' }, '_id firstName profileImage');
+
+  // Step 2: Aggregate order stats for those users only
+  const userIds = users.map(user => user._id);
+
+  const orderStats = await Order.aggregate([
+    {
+      $match: {
+        user: { $in: userIds }
+      }
+    },
+    { $unwind: '$items' },
+    {
+      $group: {
+        _id: '$user',
+        totalOrders: { $sum: 1 },
+        deliveredOrders: {
+          $sum: { $cond: [{ $eq: ['$items.status', 'delivered'] }, 1, 0] }
+        },
+        pendingOrders: {
+          $sum: { $cond: [{ $in: ['$items.status', ['processing', 'shipped']] }, 1, 0] }
+        },
+        cancelledOrders: {
+          $sum: { $cond: [{ $eq: ['$items.status', 'cancelled'] }, 1, 0] }
+        }
+      }
+    }
+  ]);
+
+  const statsMap = {};
+  orderStats.forEach(stat => {
+    statsMap[stat._id.toString()] = stat;
+  });
+
+  // Step 3: Merge users with stats
+  const result = users.map(user => {
+    const stat = statsMap[user._id.toString()] || {};
+    return {
+      id: user._id,
+      name: user.firstName,
+      profileImage: user.profileImage || '',
+      totalOrders: stat.totalOrders || 0,
+      deliveredOrders: stat.deliveredOrders || 0,
+      pendingOrders: stat.pendingOrders || 0,
+      cancelledOrders: stat.cancelledOrders || 0
+    };
+  });
+
+  return result;
+};
+
+
+export const getUserProfileWithStatsServiceId = async (userId) => {
+  // 1. Find user
+  const user = await User.findById(userId).select(
+    '_id firstName lastName phoneNumber email role bio profileImage multiProfileImage pdfFile hasActiveSubscription subscriptionExpireDate address createdAt'
+  ).lean();
+
+  if (!user) return null;
+
+  // 2. Aggregate order stats
+  const stats = await Order.aggregate([
+    { $match: { user: new mongoose.Types.ObjectId(userId) } },
+    { $unwind: '$items' },
+    {
+      $group: {
+        _id: '$user',
+        totalOrders: { $sum: 1 },
+        deliveredOrders: {
+          $sum: { $cond: [{ $eq: ['$items.status', 'delivered'] }, 1, 0] }
+        },
+        pendingOrders: {
+          $sum: { $cond: [{ $in: ['$items.status', ['processing', 'shipped']] }, 1, 0] }
+        },
+        cancelledOrders: {
+          $sum: { $cond: [{ $eq: ['$items.status', 'cancelled'] }, 1, 0] }
+        }
+      }
+    }
+  ]);
+
+  const stat = stats[0] || {};
+
+  // 3. Merge user with stats
+  return {
+    id: user._id,
+    name: `${user.firstName} ${user.lastName}`,
+    email: user.email,
+    phoneNumber: user.phoneNumber,
+    role: user.role,
+    bio: user.bio,
+    profileImage: user.profileImage,
+    multiProfileImage: user.multiProfileImage || [],
+    pdfFile: user.pdfFile,
+    hasActiveSubscription: user.hasActiveSubscription,
+    subscriptionExpireDate: user.subscriptionExpireDate,
+    address: user.address,
+    createdAt: user.createdAt,
+
+    // order stats
+    totalOrders: stat.totalOrders || 0,
+    deliveredOrders: stat.deliveredOrders || 0,
+    pendingOrders: stat.pendingOrders || 0,
+    cancelledOrders: stat.cancelledOrders || 0
+  };
+};
+
+
+
 
