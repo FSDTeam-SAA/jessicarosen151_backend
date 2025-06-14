@@ -37,7 +37,10 @@ export const getTotalRevenueReport = async (req, res) => {
 
 export const getAdminSalesHistory = async (req, res) => {
   try {
-    const result = await getAdminSalesHistoryService(req.user._id);
+    const { search = "" } = req.query;
+
+    const result = await getAdminSalesHistoryService(req.user._id, search.trim());
+
     generateResponse(res, 200, true, "Admin sales history fetched", result);
   } catch (error) {
     generateResponse(res, 500, false, "Failed to fetch admin sales", error.message);

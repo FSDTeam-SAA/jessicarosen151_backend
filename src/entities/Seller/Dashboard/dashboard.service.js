@@ -207,7 +207,60 @@ const formatMonth = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSta
 
 
 
+export const getSellerSalesHistoryService = async (adminId, search) => {
+  const sales = await Order.aggregate([
+    { $unwind: "$items" },
+    {
+      $match: {
+        "items.seller": adminId,
+        paymentStatus: "paid"
+      }
+    },
+    {
+      $group: {
+        _id: "$items.resource",
+        quantity: { $sum: "$items.quantity" },
+        amount: 
+        { $sum: {
+                $divide: [
+                { $multiply: ["$items.price", "$items.quantity"] },
+                2 
+                ]
+            }}
+        }
+    },
+    {
+      $lookup: {
+        from: "resources", 
+        localField: "_id",
+        foreignField: "_id",
+        as: "resource"
+      }
+    },
+    { $unwind: "$resource" },
 
+    // Optional search filter
+    ...(search
+      ? [{
+          $match: {
+            "resource.productId": { $regex: search, $options: "i" }
+          }
+        }]
+      : []),
+
+    {
+      $project: {
+        productId: "$resource.productId",
+        quantity: 1,
+        amount: 1,
+        _id: 0
+      }
+    },
+    { $sort: { productId: -1 } }
+  ]);
+
+  return sales;
+};
 
 
 
