@@ -3,11 +3,17 @@ import {
      getAllUsersController, getAllAdminsController, getAllSelleresController, getUserByIdController,updateUserController, deleteUserController, 
      createAvatarController,updateAvatarProfileController,deleteAvatarController,
      createMultipleAvatarController,updateMultipleAvatarController,deleteMultipleAvatarController,
-     createUserPDFController,updateUserPDFController,deleteUserPDFController
+     createUserPDFController,updateUserPDFController,deleteUserPDFController,
+     getUserOrders,
+     getOrderDetails
     } from "./user.controller.js";
-import { adminMiddleware, verifyToken } from "../../core/middlewares/authMiddleware.js";
+import { adminMiddleware,  verifyToken } from "../../core/middlewares/authMiddleware.js";
 import express from "express";
 const router = express.Router();
+
+
+router.get("/orders", verifyToken, getUserOrders);
+
 
 
 // Admin dashboard
@@ -34,6 +40,10 @@ router.delete("/upload-multiple-avatar/:id", verifyToken,deleteMultipleAvatarCon
 router.post("/upload-file/:id", verifyToken, multerUpload([{ name: "userPDF", maxCount: 1 },]),createUserPDFController);
 router.put("/upload-file/:id", verifyToken, multerUpload([{ name: "userPDF", maxCount: 1 },]),updateUserPDFController);
 router.delete("/upload-file/:id", verifyToken, deleteUserPDFController);
+
+
+// order history
+router.get("/orders/:orderId", verifyToken, getOrderDetails);
 
 export default router;
 
