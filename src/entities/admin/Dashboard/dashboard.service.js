@@ -309,7 +309,7 @@ export const getTotalRevenueReportService = async (filter = "month") => {
 
 
 
-export const getAdminSalesHistoryService = async (adminId) => {
+export const getAdminSalesHistoryService = async (adminId, search) => {
   const sales = await Order.aggregate([
     { $unwind: "$items" },
     {
@@ -320,14 +320,33 @@ export const getAdminSalesHistoryService = async (adminId) => {
     },
     {
       $group: {
-        _id: "$items.resource", // group by product ID
+        _id: "$items.resource",
         quantity: { $sum: "$items.quantity" },
         amount: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
       }
     },
     {
+      $lookup: {
+        from: "resources", 
+        localField: "_id",
+        foreignField: "_id",
+        as: "resource"
+      }
+    },
+    { $unwind: "$resource" },
+
+    // Optional search filter
+    ...(search
+      ? [{
+          $match: {
+            "resource.productId": { $regex: search, $options: "i" }
+          }
+        }]
+      : []),
+
+    {
       $project: {
-        productId: "$_id",
+        productId: "$resource.productId",
         quantity: 1,
         amount: 1,
         _id: 0
@@ -338,6 +357,7 @@ export const getAdminSalesHistoryService = async (adminId) => {
 
   return sales;
 };
+
 
 
 
@@ -354,7 +374,7 @@ export const getRevenueFromSellerService = async () => {
       $group: {
         _id: {
           seller: "$items.seller",
-          productId: "$items.resource"
+          resource: "$items.resource"
         },
         amount: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
       }
@@ -362,13 +382,48 @@ export const getRevenueFromSellerService = async () => {
     {
       $project: {
         sellerId: "$_id.seller",
-        productId: "$_id.productId",
+        resourceId: "$_id.resource",
         revenueFromSeller: { $divide: ["$amount", 2] },
         _id: 0
       }
     },
-    { $sort: { sellerId: 1 } }
+    // Join with User model to get seller info
+    {
+      $lookup: {
+        from: "users",
+        localField: "sellerId",
+        foreignField: "_id",
+        as: "sellerInfo"
+      }
+    },
+    { $unwind: "$sellerInfo" },
+    {
+      $match: {
+        "sellerInfo.role": "SELLER"
+      }
+    },
+    // Join with Resource model to get product info
+    {
+      $lookup: {
+        from: "resources",
+        localField: "resourceId",
+        foreignField: "_id",
+        as: "resourceInfo"
+      }
+    },
+    { $unwind: "$resourceInfo" },
+    {
+      $project: {
+        sellerId: 1,
+        sellerName: "$sellerInfo.name",
+        productId: "$resourceInfo.productId",
+        revenueFromSeller: 1
+      }
+    },
+    { $sort: { sellerName: 1 } }
   ]);
 
   return revenue;
 };
+
+

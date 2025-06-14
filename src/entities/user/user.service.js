@@ -3,7 +3,7 @@ import cloudinary, { cloudinaryUpload } from "../../lib/cloudinaryUpload.js";
 import User from "../auth/auth.model.js";
 import RoleType from "../../lib/types.js";
 import fs from "fs";
-import { Types,ObjectId, Mongoose } from "mongoose";
+import Order from "../Payment/order.model.js";
 
 
 // Get all users
@@ -338,3 +338,53 @@ export const deleteUserPDF = async (id) => {
 
   return updatedUser;
 };
+
+
+export const getUserOrdersSevice = async (userId) => {
+  const orders = await Order.find({ user: userId, paymentStatus: "paid" })
+    .sort({ createdAt: -1 })
+    .select("items.price items.status items.resource createdAt")
+    .populate({
+      path: "items.resource",
+      select: "title"
+    })
+    .lean(); // plain JS objects for performance
+
+  // Flatten for UI consumption
+  const formatted = orders.flatMap(order =>
+    order.items.map(item => ({
+      orderId: order._id,
+      resourceName: item.resource?.title || "N/A",
+      price: `$${item.price.toFixed(2)}`,
+      date: new Date(order.createdAt).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      }),
+      status: item.status
+    }))
+  );
+
+  return formatted;
+};
+
+
+
+export const getOrderDetailsService = async (orderId, userId) => {
+  const order = await Order.findOne({ _id: orderId, user: userId })
+    .populate({
+      path: 'items.resource',
+      select: 'title description previewUrl'
+    })
+    .populate({
+      path: 'items.seller',
+      select: 'name email'
+    })
+    .populate({
+      path: 'user',
+      select: 'name email'
+    });
+
+  return order;
+};
+

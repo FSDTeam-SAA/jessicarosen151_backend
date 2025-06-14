@@ -17,6 +17,9 @@ import {
   createUserPDF,
   updateUserPDF,
   deleteUserPDF,
+  getUserOrdersSevice,
+  getOrderDetailsService,
+
 
 } from "./user.service.js";
 
@@ -192,5 +195,35 @@ export const deleteUserPDFController = async (req, res) => {
     generateResponse(res, 200, true, 'PDF deleted successfully', user);
   } catch (error) {
     generateResponse(res, 500, false, 'Failed to delete PDF', null);
+  }
+};
+
+
+
+
+
+export const getUserOrders = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    const orders = await getUserOrdersSevice(userId);
+    generateResponse(res, 200, true, "Orders fetched successfully", orders);
+  } catch (err) {
+    generateResponse(res, 500, false, "Failed to fetch orders", err.message);
+  }
+};
+
+
+export const getOrderDetails = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user._id;
+    const order = await getOrderDetailsService(orderId, userId);
+    if (!order) {
+      return generateResponse(res, 404, 'fail', 'Order not found or unauthorized', null);
+    }
+    generateResponse(res, 200, 'success', 'Order details fetched successfully', order);
+  } catch (err) {
+    generateResponse(res, 500, 'fail', 'Something went wrong', null);
   }
 };
