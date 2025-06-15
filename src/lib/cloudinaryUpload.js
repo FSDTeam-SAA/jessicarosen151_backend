@@ -15,7 +15,7 @@ export const cloudinaryUpload = async (filePath, public_id, folder) => {
     const isDocument = ["pdf", "docx", "doc", "xlsx", "xls", "ppt", "pptx"].includes(extension);
 
     const uploadImage = await cloudinary.uploader.upload(filePath, {
-      resource_type: isDocument ? "raw" : "auto", // use "raw" for documents
+      resource_type: isDocument ? "raw" : "auto", 
       public_id,
       folder,
     });
