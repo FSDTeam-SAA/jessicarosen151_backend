@@ -46,9 +46,10 @@ export const createResource = async (req, res) => {
         `doc_${Date.now()}`,
         "resources/files"
       );
-      if (result?.secure_url) fileUrl = result.secure_url;
+      if (result?.secure_url  && result.resource_type === "raw") fileUrl = result.secure_url;
       fileType = file.mimetype || "application/octet-stream";
     }
+    console.log("Uploading file with MIME type:", file.mimetype);
 
     let status = "pending";
     if (req.user.role === "ADMIN") {
