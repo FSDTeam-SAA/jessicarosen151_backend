@@ -359,9 +359,6 @@ export const getAdminSalesHistoryService = async (adminId, search) => {
 };
 
 
-
-
-
 export const getRevenueFromSellerService = async () => {
   const revenue = await Order.aggregate([
     { $unwind: "$items" },

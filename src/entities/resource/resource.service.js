@@ -183,9 +183,10 @@ export const updateResourceService = async (id, updateData, user) => {
 
   if (user.role === "SELLER") {
     const resource = await Resource.findById(id);
+
     if (!resource) throw new Error("Resource not found");
 
-    if (resource.createdBy.toString() !== user._id) {
+    if (resource.createdBy.toString() !== user._id.toString()) {
       throw new Error("Sellers can only update their own resources");
     }
 

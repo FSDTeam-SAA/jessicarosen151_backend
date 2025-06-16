@@ -20,11 +20,11 @@ export const cloudinaryUpload = async (filePath, public_id, folder) => {
       folder,
     });
 
-    // fs.unlinkSync(filePath);
+    fs.unlinkSync(filePath);
     return uploadImage;
   } catch (error) {
     console.error("Cloudinary upload error:", error);
-    // fs.unlinkSync(filePath);
+    fs.unlinkSync(filePath);
     return "file upload failed";
   }
 };
