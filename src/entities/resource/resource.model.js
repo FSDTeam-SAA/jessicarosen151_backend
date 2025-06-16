@@ -37,7 +37,7 @@ const resourceSchema = new Schema(
     },
     format: {
       type: String,
-      enum: ["Pdf", "Video", "Audio", "Image", "Microsoft Word", "Ebook", "Easel", "Powerpoint", "Google Apps", "Digital", "other"],
+      enum: ["PDF","Document",  ],
       required: true
     },
     file: {
@@ -48,9 +48,7 @@ const resourceSchema = new Schema(
         type: String,
       }
     },
-    thumbnail: {
-      type: String,
-    },
+    thumbnail: [String],
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",

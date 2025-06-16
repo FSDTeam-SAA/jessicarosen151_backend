@@ -5,6 +5,7 @@ import RoleType from "../../lib/types.js";
 import fs from "fs";
 import Order from "../Payment/order.model.js";
 import mongoose from "mongoose";
+import Resource from "../resource/resource.model.js";
 
 
 // Get all users
@@ -501,5 +502,65 @@ export const getUserProfileWithStatsServiceId = async (userId) => {
 };
 
 
+export const getSellerProfilesWithSalesStatsService = async () => {
+
+  const sellers = await User.find({ role: 'SELLER' }, '_id firstName profileImage');
+  const sellerIds = sellers.map(seller => seller._id);
+
+  // Step 2: Count products (resources) for each seller
+  const resourceCounts = await Resource.aggregate([
+    {
+      $match: {
+        createdBy: { $in: sellerIds }
+      }
+    },
+    {
+      $group: {
+        _id: '$createdBy',
+        SellerProduct: { $sum: 1 }
+      }
+    }
+  ]);
+
+  const productMap = {};
+  resourceCounts.forEach(item => {
+    productMap[item._id.toString()] = item.SellerProduct;
+  });
+
+  const result = sellers.map(seller => ({
+    id: seller._id,
+    name: seller.firstName,
+    profileImage: seller.profileImage || '',
+    SellerProduct: productMap[seller._id.toString()] || 0
+  }));
+
+  return result;
+};
 
 
+export const getSellerProfileWithStatsServiceId = async (sellerId) => {
+  // 1. Find seller
+  const seller = await User.findById(sellerId).select(
+    '_id firstName lastName phoneNumber email role bio profileImage multiProfileImage pdfFile address createdAt'
+  ).lean();
+
+  if (!seller || seller.role !== 'SELLER') return null;
+
+
+  const totalProducts = await Resource.countDocuments({ createdBy: sellerId });
+
+  return {
+    id: seller._id,
+    name: `${seller.firstName} ${seller.lastName}`,
+    email: seller.email,
+    phoneNumber: seller.phoneNumber,
+    role: seller.role,
+    bio: seller.bio,
+    profileImage: seller.profileImage,
+    multiProfileImage: seller.multiProfileImage || [],
+    pdfFile: seller.pdfFile,
+    address: seller.address,
+    createdAt: seller.createdAt,
+    totalProducts,
+  };
+};
