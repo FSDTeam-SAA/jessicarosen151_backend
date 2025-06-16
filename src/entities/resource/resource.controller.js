@@ -15,55 +15,57 @@ import { cloudinaryUpload } from "../../lib/cloudinaryUpload.js";
 export const createResource = async (req, res) => {
   try {
     const createdBy = req.user._id;
-    const {
-      title,
-      description,
-      price,
-      discountPrice,
-      quantity,
+    const { 
+      title, 
+      description, 
+      price, 
+      discountPrice, 
+      quantity, 
       format,
-      country,
-      states,
-      resourceType,
-      practiceAreas
+      country, 
+      states, 
+      resourceType, 
+      practiceAreas 
     } = req.body;
 
-    const thumbnailFiles = req.files?.thumbnail || [];
+    const thumbnailFile = req.files?.thumbnail?.[0];
     const file = req.files?.file?.[0];
+    const imageFiles = req.files?.images || [];
 
-    let thumbnails = [];
+    let thumbnail = null;
     let fileUrl = null;
     let fileType = null;
+    const images = [];
 
-    // Upload all thumbnails
-    for (const thumb of thumbnailFiles) {
-      const result = await cloudinaryUpload(
-        thumb.path,
-        `thumb_${Date.now()}`,
-        "resources/thumbnails"
-      );
-
-      if (result?.secure_url) {
-        thumbnails.push(result.secure_url);
-      }
+    // Upload thumbnail
+    if (thumbnailFile) {
+      const result = await cloudinaryUpload(thumbnailFile.path, `thumb_${Date.now()}`, "resources/thumbnails");
+      if (result?.secure_url) thumbnail = result.secure_url;
     }
 
-    // Upload the main file
+    // Upload resource file
     if (file) {
       const result = await cloudinaryUpload(
         file.path,
         `doc_${Date.now()}`,
         "resources/files"
       );
-
-      if (result?.secure_url && result.resource_type === "raw") {
-        fileUrl = result.secure_url;
-      }
-
+      if (result?.secure_url && result.resource_type === "raw") fileUrl = result.secure_url;
       fileType = file.mimetype || "application/octet-stream";
     }
 
-    let status = req.user.role === "ADMIN" ? "approved" : "pending";
+    // Upload gallery images
+    for (const imageFile of imageFiles) {
+      const result = await cloudinaryUpload(imageFile.path, `img_${Date.now()}`, "resources/images");
+      if (result?.secure_url) {
+        images.push(result.secure_url);
+      }
+    }
+
+    let status = "pending";
+    if (req.user.role === "ADMIN") {
+      status = "approved";
+    }
 
     const resource = await createResourceService({
       title,
@@ -76,7 +78,8 @@ export const createResource = async (req, res) => {
         url: fileUrl,
         type: fileType
       },
-      thumbnail: thumbnails, // now stores array of URLs
+      thumbnail,
+      images,
       country,
       states: states || [],
       resourceType: resourceType || [],
@@ -87,10 +90,10 @@ export const createResource = async (req, res) => {
 
     generateResponse(res, 201, true, "Resource created successfully", resource);
   } catch (error) {
-    console.error("Create Resource Error:", error);
     generateResponse(res, 400, false, "Failed to create resource", error.message);
   }
 };
+
 
 
 
