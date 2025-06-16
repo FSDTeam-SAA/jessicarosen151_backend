@@ -21,7 +21,8 @@ import {
   getOrderDetailsService,
   getUserProfilesWithOrderStatsService,
   getUserProfileWithStatsServiceId,
-
+  getSellerProfilesWithSalesStatsService,
+  getSellerProfileWithStatsServiceId,
 
 } from "./user.service.js";
 
@@ -179,6 +180,7 @@ export const createUserPDFController = async (req, res) => {
   }
 };
 
+
 export const updateUserPDFController = async (req, res) => {
   try {
     const { id } = req.params;
@@ -199,9 +201,6 @@ export const deleteUserPDFController = async (req, res) => {
     generateResponse(res, 500, false, 'Failed to delete PDF', null);
   }
 };
-
-
-
 
 
 export const getUserOrders = async (req, res) => {
@@ -259,5 +258,29 @@ export const getUserProfilesWithOrderStatsId = async (req, res) => {
 };
 
 
+export const getSellerProfilesWithSalesStats = async (req, res) => {
+  try {
+    const sellers = await getSellerProfilesWithSalesStatsService();
+    generateResponse(res, 200, 'success', 'Seller profiles fetched successfully', sellers);
+  } catch (error) {
+    console.error(error);
+    generateResponse(res, 500, 'fail', 'Something went wrong', null);
+  }
+};
 
 
+export const getSellerProfileWithStatsById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const profile = await getSellerProfileWithStatsServiceId(id);
+
+    if (!profile) {
+      return generateResponse(res, 404, 'fail', 'Seller not found', null);
+    }
+
+    generateResponse(res, 200, 'success', 'Seller profile fetched successfully', profile);
+  } catch (error) {
+    console.error('Error fetching seller profile:', error);
+    generateResponse(res, 500, 'fail', 'Something went wrong', null);
+  }
+};
