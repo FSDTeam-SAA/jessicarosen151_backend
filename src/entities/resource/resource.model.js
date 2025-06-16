@@ -48,7 +48,13 @@ const resourceSchema = new Schema(
         type: String,
       }
     },
-    thumbnail: [String],
+    thumbnail: {
+      type: String
+    },
+    images: {
+      type: [String],
+      default: []
+    },
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
