@@ -29,6 +29,10 @@ const promoCodeSchema = new Schema(
       min: 0,
       default: 0,
     },
+    special: {
+      type: Boolean,
+      default: false,
+    },
     active: {
       type: Boolean,
       default: true,

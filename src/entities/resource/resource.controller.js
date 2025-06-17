@@ -109,6 +109,7 @@ export const getAllResources = async (req, res, next) => {
     search,
     country,
     states,
+    format,
     sortedBy,
   } = req.query;
 
@@ -117,6 +118,7 @@ export const getAllResources = async (req, res, next) => {
     const statesArray = states ? states.split(',') : null;
     const practiceAreasArray = practiceAreas ? practiceAreas.split(',') : null;
     const resourceTypeArray = resourceType ? resourceType.split(',') : null;
+    const formatArray = format ? format.split(',') : null;
 
     const { data, pagination } = await getAllResourcesService(
       page,
@@ -131,8 +133,8 @@ export const getAllResources = async (req, res, next) => {
       search?.toLowerCase(),
       country,
       statesArray,
-      sortedBy,
-      
+      formatArray,
+      sortedBy
     );
 
     return res.status(200).json({
