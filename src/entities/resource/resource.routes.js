@@ -35,7 +35,7 @@ router.
 router
   .route('/:id')
   .get(getResourceById)
-  .put(verifyToken, adminSellerMiddleware, updateResource)
+  .put(verifyToken, adminSellerMiddleware, multerUpload([{ name: "file", maxCount: 1 }, { name: "thumbnail", maxCount: 1 }, { name: "images", maxCount: 10 }]), updateResource)
   .delete(verifyToken, adminSellerMiddleware, deleteResource);
 
 

@@ -175,17 +175,10 @@ export const getResourceByIdService = async (id, page, limit, skip) => {
 
 
 export const updateResourceService = async (id, updateData, user) => {
-  if (user.role === "ADMIN") {
-    const updated = await Resource.findByIdAndUpdate(id, updateData, { new: true });
-    if (!updated) throw new Error("Resource not found");
-    return updated;
-  }
+  const resource = await Resource.findById(id);
+  if (!resource) throw new Error("Resource not found");
 
   if (user.role === "SELLER") {
-    const resource = await Resource.findById(id);
-
-    if (!resource) throw new Error("Resource not found");
-
     if (resource.createdBy.toString() !== user._id.toString()) {
       throw new Error("Sellers can only update their own resources");
     }
@@ -193,13 +186,12 @@ export const updateResourceService = async (id, updateData, user) => {
     if (updateData.status) {
       throw new Error("Only admin can update the status of a resource");
     }
-
-    const updated = await Resource.findByIdAndUpdate(id, updateData, { new: true });
-    return updated;
   }
 
-  throw new Error("Unauthorized role");
+  const updated = await Resource.findByIdAndUpdate(id, updateData, { new: true });
+  return updated;
 };
+
 
 
 export const deleteResourceService = async (id, user) => {
