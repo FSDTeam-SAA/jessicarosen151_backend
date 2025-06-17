@@ -23,6 +23,7 @@ import {
   getUserProfileWithStatsServiceId,
   getSellerProfilesWithSalesStatsService,
   getSellerProfileWithStatsServiceId,
+  getHappyCustomersService,
 
 } from "./user.service.js";
 
@@ -282,5 +283,16 @@ export const getSellerProfileWithStatsById = async (req, res) => {
   } catch (error) {
     console.error('Error fetching seller profile:', error);
     generateResponse(res, 500, 'fail', 'Something went wrong', null);
+  }
+};
+
+
+export const happyCustomersController = async (req, res) => {
+  try {
+    const result = await getHappyCustomersService();
+    generateResponse(res, 200, true, "Top happy customers fetched", result);
+  } catch (error) {
+    console.error("Happy Customers Error:", error);
+    generateResponse(res, 500, false, "Failed to fetch happy customers");
   }
 };

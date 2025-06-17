@@ -10,6 +10,7 @@ import {
      getUserProfilesWithOrderStatsId,
      getSellerProfilesWithSalesStats,
      getSellerProfileWithStatsById,
+     happyCustomersController,
     } from "./user.controller.js";
 import { adminMiddleware,  verifyToken } from "../../core/middlewares/authMiddleware.js";
 import express from "express";
@@ -18,6 +19,8 @@ const router = express.Router();
 
 
 router.get('/all-sellerProfiles', verifyToken, adminMiddleware, getSellerProfilesWithSalesStats);
+
+router.get('/happy-customers', happyCustomersController);
 
 
 
