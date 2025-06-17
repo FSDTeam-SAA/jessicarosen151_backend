@@ -203,7 +203,6 @@ export const getAllResourcesService = async (
 
 
 
-
 export const getResourceByIdService = async (id, page, limit, skip) => {
   const resource = await Resource.findById(id)
     .select("-__v -updatedAt")
@@ -271,7 +270,6 @@ export const updateResourceService = async (id, updateData, user) => {
 };
 
 
-
 export const deleteResourceService = async (id, user) => {
   const resource = await Resource.findById(id);
   if (!resource) throw new Error("Resource not found or already deleted");
@@ -304,7 +302,6 @@ export const getSellerResourcesService = async (myId) => {
 
 export const getTopSellingResources = async (country, limit = 10) => {
   const pipeline = [
-    // Unwind each order item
     { $unwind: "$items" },
 
     // Lookup the resource
@@ -353,7 +350,6 @@ export const getTopSellingResources = async (country, limit = 10) => {
 
   const topSelling = await Order.aggregate(pipeline);
 
-  // Optionally populate createdBy, category, subCategory (if needed)
   const populated = await Resource.populate(topSelling, {
     path: "resource.createdBy resource.category resource.subCategory",
   });

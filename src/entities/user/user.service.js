@@ -348,15 +348,15 @@ export const getUserOrdersSevice = async (userId) => {
     .select("items.price items.status items.resource createdAt")
     .populate({
       path: "items.resource",
-      select: "title"
+      select: "title file" 
     })
-    .lean(); // plain JS objects for performance
+    .lean();
 
-  // Flatten for UI consumption
   const formatted = orders.flatMap(order =>
     order.items.map(item => ({
       orderId: order._id,
       resourceName: item.resource?.title || "N/A",
+      file: item.resource?.file || null,
       price: `$${item.price.toFixed(2)}`,
       date: new Date(order.createdAt).toLocaleDateString("en-US", {
         year: "numeric",
@@ -372,11 +372,12 @@ export const getUserOrdersSevice = async (userId) => {
 
 
 
+
 export const getOrderDetailsService = async (orderId, userId) => {
   const order = await Order.findOne({ _id: orderId, user: userId })
     .populate({
       path: 'items.resource',
-      select: 'title description previewUrl'
+      select: 'title description file'
     })
     .populate({
       path: 'items.seller',
@@ -563,4 +564,34 @@ export const getSellerProfileWithStatsServiceId = async (sellerId) => {
     createdAt: seller.createdAt,
     totalProducts,
   };
+};
+
+
+
+export const getHappyCustomersService = async () => {
+ 
+  const topBuyers = await Order.aggregate([
+    { $match: { paymentStatus: "paid" } },
+    { $unwind: "$items" },
+    {
+      $group: {
+        _id: "$user",
+        totalItemsPurchased: { $sum: "$items.quantity" }
+      }
+    },
+    { $sort: { totalItemsPurchased: -1 } },
+    { $limit: 4 }
+  ]);
+
+
+  const userIds = topBuyers.map(user => user._id);
+
+  const users = await User.find({ _id: { $in: userIds } })
+    .select("profileImage")
+    .lean();
+
+  const userMap = new Map(users.map(user => [user._id.toString(), user]));
+  const sortedUsers = topBuyers.map(u => userMap.get(u._id.toString())).filter(Boolean);
+
+  return sortedUsers;
 };
