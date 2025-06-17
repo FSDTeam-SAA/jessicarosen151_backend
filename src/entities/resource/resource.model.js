@@ -37,7 +37,7 @@ const resourceSchema = new Schema(
     },
     format: {
       type: String,
-      enum: ["PDF","Document",  ],
+      enum: ["PDF","Document"],
       required: true
     },
     file: {
