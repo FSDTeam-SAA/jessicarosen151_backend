@@ -37,13 +37,13 @@ export const createResource = async (req, res) => {
     let fileType = null;
     const images = [];
 
-    // Upload thumbnail
+
     if (thumbnailFile) {
       const result = await cloudinaryUpload(thumbnailFile.path, `thumb_${Date.now()}`, "resources/thumbnails");
       if (result?.secure_url) thumbnail = result.secure_url;
     }
 
-    // Upload resource file
+
     if (file) {
       const result = await cloudinaryUpload(
         file.path,
@@ -54,7 +54,7 @@ export const createResource = async (req, res) => {
       fileType = file.mimetype || "application/octet-stream";
     }
 
-    // Upload gallery images
+
     for (const imageFile of imageFiles) {
       const result = await cloudinaryUpload(imageFile.path, `img_${Date.now()}`, "resources/images");
       if (result?.secure_url) {
@@ -93,8 +93,6 @@ export const createResource = async (req, res) => {
     generateResponse(res, 400, false, "Failed to create resource", error.message);
   }
 };
-
-
 
 
 export const getAllResources = async (req, res, next) => {
@@ -175,13 +173,87 @@ export const getResourceById = async (req, res, next) => {
 
 export const updateResource = async (req, res) => {
   try {
-    const updated = await updateResourceService(req.params.id, req.body, req.user);
+    const resourceId = req.params.id;
+    const user = req.user;
+
+    const {
+      title,
+      description,
+      price,
+      discountPrice,
+      quantity,
+      format,
+      country,
+      states,
+      resourceType,
+      practiceAreas,
+    } = req.body;
+
+    const thumbnailFile = req.files?.thumbnail?.[0];
+    const file = req.files?.file?.[0];
+    const imageFiles = req.files?.images || [];
+
+    let updatedFields = {};
+
+    if (title !== undefined) updatedFields.title = title;
+    if (description !== undefined) updatedFields.description = description;
+    if (price !== undefined) updatedFields.price = price;
+    if (discountPrice !== undefined) updatedFields.discountPrice = discountPrice;
+    if (quantity !== undefined) updatedFields.quantity = quantity;
+    if (format !== undefined) updatedFields.format = format;
+    if (country !== undefined) updatedFields.country = country;
+    if (states !== undefined) updatedFields.states = states;
+    if (resourceType !== undefined) updatedFields.resourceType = resourceType;
+    if (practiceAreas !== undefined) updatedFields.practiceAreas = practiceAreas;
+
+    if (thumbnailFile) {
+      const result = await cloudinaryUpload(
+        thumbnailFile.path,
+        `thumb_${Date.now()}`,
+        "resources/thumbnails"
+      );
+      if (result?.secure_url) {
+        updatedFields.thumbnail = result.secure_url;
+      }
+    }
+
+    if (file) {
+      const result = await cloudinaryUpload(
+        file.path,
+        `doc_${Date.now()}`,
+        "resources/files"
+      );
+      if (result?.secure_url && result.resource_type === "raw") {
+        updatedFields.file = {
+          url: result.secure_url,
+          type: file.mimetype || "application/octet-stream",
+        };
+      }
+    }
+
+    if (imageFiles.length) {
+      const uploadedImages = [];
+      for (const imageFile of imageFiles) {
+        const result = await cloudinaryUpload(
+          imageFile.path,
+          `img_${Date.now()}`,
+          "resources/images"
+        );
+        if (result?.secure_url) {
+          uploadedImages.push(result.secure_url);
+        }
+      }
+      updatedFields.images = uploadedImages;
+    }
+
+    const updated = await updateResourceService(resourceId, updatedFields, user);
 
     generateResponse(res, 200, true, "Resource updated successfully", updated);
   } catch (error) {
     generateResponse(res, 400, false, "Failed to update resource", error.message);
   }
 };
+
 
 
 export const deleteResource = async (req, res) => {
