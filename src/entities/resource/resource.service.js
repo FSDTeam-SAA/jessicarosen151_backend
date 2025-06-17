@@ -11,103 +11,179 @@ export const createResourceService = async (data) => {
 
 
 export const getAllResourcesService = async (
-  page, 
-  limit, 
-  skip, 
-  status, 
-  sellerId, 
-  resourceType, 
-  price, 
-  practiceAreas, 
-  fileType, 
+  page,
+  limit,
+  skip,
+  status,
+  sellerId,
+  resourceType,
+  price,
+  practiceAreas,
+  fileType,
   search,
   country,
   states,
+  formatArray,
   sortedBy
 ) => {
   const query = sellerId ? { createdBy: sellerId } : {};
-  
-  if (status) query.status = new RegExp(`^${status}$`, 'i');
-  if (fileType) query["file.type"] = new RegExp(`^${fileType}$`, 'i');
+
+  if (status) query.status = new RegExp(`^${status}$`, "i");
+  if (fileType) query["file.type"] = new RegExp(`^${fileType}$`, "i");
   if (price) query.resultantPrice = { $gte: price[0], $lte: price[1] };
-  if (country) query.country = new RegExp(`^${country}$`, 'i');
-  if (states) query.states = { $in: states.map(state => new RegExp(`^${state}$`, 'i')) };
+  if (country) query.country = new RegExp(`^${country}$`, "i");
+  if (states) query.states = { $in: states.map(s => new RegExp(`^${s}$`, "i")) };
 
   if (practiceAreas) {
-    query.practiceAreas = typeof practiceAreas === "string" 
-      ? new RegExp(`^${practiceAreas}$`, 'i') 
-      : { $in: practiceAreas.map(area => new RegExp(`^${area}$`, 'i')) };
+    query.practiceAreas = Array.isArray(practiceAreas)
+      ? { $in: practiceAreas.map(p => new RegExp(`^${p}$`, "i")) }
+      : new RegExp(`^${practiceAreas}$`, "i");
   }
 
   if (resourceType) {
-    query.resourceType = typeof resourceType === "string"
-      ? new RegExp(`^${resourceType}$`, 'i')
-      : { $in: resourceType.map(type => new RegExp(`^${type}$`, 'i')) };
+    query.resourceType = Array.isArray(resourceType)
+      ? { $in: resourceType.map(t => new RegExp(`^${t}$`, "i")) }
+      : new RegExp(`^${resourceType}$`, "i");
   }
-  
 
-  const resources = await Resource.find(query)
+  if (formatArray) {
+    query.format = Array.isArray(formatArray)
+      ? { $in: formatArray.map(f => new RegExp(`^${f}$`, "i")) }
+      : new RegExp(`^${formatArray}$`, "i");
+  }
+
+  const baseResources = await Resource.find(query)
     .select("-__v -updatedAt")
     .populate("createdBy", "firstName lastName email profileImage")
-    .sort({ createdAt: -1 }) // initial sorting, may be overridden
+    .sort({ createdAt: -1 })
     .lean();
 
-  const filteredResources = resources.filter((resource) => {
-    const title = resource.title.toLowerCase();
-    const description = resource.description?.toLowerCase() || "";
-    const practiceAreasList = resource.practiceAreas?.map(p => p.toLowerCase()) || [];
-    const resourceTypes = resource.resourceType?.map(t => t.toLowerCase()) || [];
+  const filteredResources = baseResources.filter(resource => {
+    const title = resource.title?.toLowerCase() || "";
+    const desc = resource.description?.toLowerCase() || "";
+    const areas = resource.practiceAreas?.map(a => a.toLowerCase()) || [];
+    const types = resource.resourceType?.map(t => t.toLowerCase()) || [];
+    const format = resource.format?.toLowerCase() || "";
+    const key = search?.toLowerCase();
 
-    const matchedSearch = search
-      ? title.includes(search) ||
-        description.includes(search) ||
-        practiceAreasList.some(area => area.includes(search)) ||
-        resourceTypes.some(type => type.includes(search))
-      : true;
-
-    return matchedSearch;
+    if (!key) return true;
+    return (
+      title.includes(key) ||
+      desc.includes(key) ||
+      areas.some(a => a.includes(key)) ||
+      types.some(t => t.includes(key)) ||
+      format.includes(key)
+    );
   });
 
+
+  // Attach averageRating & totalReviews
   const modifiedResources = await Promise.all(
     filteredResources.map(async (resource) => {
-      const reviewInfo = await Review.aggregate([
+      const [ratingData] = await Review.aggregate([
         { $match: { resourceId: new mongoose.Types.ObjectId(resource._id) } },
         {
           $group: {
             _id: "$resourceId",
             averageRating: { $avg: "$rating" },
-            totalReviews: { $sum: 1 }
+            totalReviews: { $sum: 1 },
+          },
+        },
+      ]);
+
+      return {
+        ...resource,
+        averageRating: ratingData?.averageRating || 0,
+        totalReviews: ratingData?.totalReviews || 0,
+      };
+    })
+  );
+
+  let finalResources = [...modifiedResources];
+
+  switch (sortedBy?.toLowerCase()) {
+    case "rating": {
+      const topRated = await Review.aggregate([
+        { $group: {
+            _id: "$resourceId",
+            averageRating: { $avg: "$rating" },
+            reviewCount: { $sum: 1 }
+        }},
+        { $sort: { averageRating: -1, reviewCount: -1 } }
+      ]);
+      const ratingMap = new Map(topRated.map(r => [r._id.toString(), r.averageRating]));
+      finalResources.sort((a, b) => (ratingMap.get(b._id.toString()) || 0) - (ratingMap.get(a._id.toString()) || 0));
+      break;
+    }
+
+    case "best reviewed":
+      finalResources.sort((a, b) => b.averageRating - a.averageRating);
+      break;
+
+    case "most recent":
+      finalResources.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      break;
+
+    case "best sellers(products)": {
+      const productSales = await Order.aggregate([
+        { $match: { paymentStatus: "paid" } },
+        { $unwind: "$items" },
+        {
+          $group: {
+            _id: "$items.resource",
+            totalSold: { $sum: "$items.quantity" }
           }
         }
       ]);
 
-      resource.averageRating = reviewInfo[0]?.averageRating || 0;
-      resource.totalReviews = reviewInfo[0]?.totalReviews || 0;
+      const salesMap = new Map(productSales.map(p => [p._id.toString(), p.totalSold]));
 
-      return resource;
-    })
-  );
+      // Add totalSold field to each resource
+      finalResources = finalResources.map(resource => ({
+        ...resource,
+        totalSold: salesMap.get(resource._id.toString()) || 0
+      }));
 
-  // Sorting logic based on 'sortedBy'
-  let finalResources = [...modifiedResources];
-  switch (sortedBy?.toLowerCase()) {
-    case 'best reviewed':
-    case 'rating':
-      finalResources.sort((a, b) => b.averageRating - a.averageRating);
+      finalResources.sort((a, b) => b.totalSold - a.totalSold);
       break;
-    case 'most recent':
-      finalResources.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    case "best sellers(people)": {
+      const sellerSales = await Order.aggregate([
+        { $match: { paymentStatus: "paid" } },
+        { $unwind: "$items" },
+        { $group: { _id: "$items.seller", totalSold: { $sum: "$items.quantity" } } }
+      ]);
+      const sellerSalesMap = new Map(sellerSales.map(s => [s._id.toString(), s.totalSold]));
+      finalResources.sort((a, b) => {
+        const salesA = sellerSalesMap.get(a.createdBy?._id?.toString() || "") || 0;
+        const salesB = sellerSalesMap.get(b.createdBy?._id?.toString() || "") || 0;
+        return salesB - salesA;
+      });
       break;
-    case 'best sellers(products)':
-      finalResources.sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0));
+    }
+
+    case "relevance": {
+      if (search) {
+        const words = search.toLowerCase().split(" ");
+        const relevanceScore = res => words.reduce((score, word) => {
+          const title = res.title.toLowerCase();
+          const desc = res.description.toLowerCase();
+          const areas = (res.practiceAreas || []).map(p => p.toLowerCase());
+          return score +
+            (title.includes(word) ? 3 : 0) +
+            (desc.includes(word) ? 2 : 0) +
+            (areas.some(a => a.includes(word)) ? 1 : 0);
+        }, 0);
+        finalResources.sort((a, b) => relevanceScore(b) - relevanceScore(a));
+      } else {
+        finalResources.sort((a, b) => {
+          const intersect = (a.practiceAreas || []).filter(val => (b.practiceAreas || []).includes(val));
+          return intersect.length > 0 ? -1 : 1;
+        });
+      }
       break;
-    case 'best sellers(people)':
-      // You can implement seller-level aggregation here if needed
-      break;
-    case 'relevance':
-    default:
-      // Keep current filteredResources order (implicitly by match strength)
-      break;
+    }
   }
 
   const totalItems = finalResources.length;
@@ -120,10 +196,11 @@ export const getAllResourcesService = async (
       currentPage: page,
       totalPages,
       totalItems,
-      itemsPerPage: limit
-    }
+      itemsPerPage: limit,
+    },
   };
 };
+
 
 
 export const getResourceByIdService = async (id, page, limit, skip) => {
@@ -193,7 +270,6 @@ export const updateResourceService = async (id, updateData, user) => {
 };
 
 
-
 export const deleteResourceService = async (id, user) => {
   const resource = await Resource.findById(id);
   if (!resource) throw new Error("Resource not found or already deleted");
@@ -226,7 +302,6 @@ export const getSellerResourcesService = async (myId) => {
 
 export const getTopSellingResources = async (country, limit = 10) => {
   const pipeline = [
-    // Unwind each order item
     { $unwind: "$items" },
 
     // Lookup the resource
@@ -275,7 +350,6 @@ export const getTopSellingResources = async (country, limit = 10) => {
 
   const topSelling = await Order.aggregate(pipeline);
 
-  // Optionally populate createdBy, category, subCategory (if needed)
   const populated = await Resource.populate(topSelling, {
     path: "resource.createdBy resource.category resource.subCategory",
   });
