@@ -17,6 +17,7 @@ import paymentRoutes from '../../entities/Payment/payment.routes.js';
 import dashboardRoutes from '../../entities/Seller/Dashboard/dashboard.routes.js';
 import adminDashboardRoutes from '../../entities/admin/Dashboard/dashboard.routes.js';
 import newsletterRoutes from '../../entities/newsletter/newsletter.routes.js';
+import questionAnswerRoutes from '../../entities/QuesAns/qa.routes.js';
 
 const router = express.Router();
 
@@ -37,10 +38,10 @@ router.use('/v1/seller',applicationRoutes)
 router.use('/v1/stripe',sellerOnboardingRoutes);
 router.use('/v1/payment',paymentRoutes)
 
-
 router.use('/v1/seller/dashboard', dashboardRoutes);
 router.use('/v1/admin/dashboard', adminDashboardRoutes);
 
 router.use('/v1/newsletter', newsletterRoutes)
+router.use('/v1/qa', questionAnswerRoutes);
 
 export default router;
