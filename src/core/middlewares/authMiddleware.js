@@ -12,6 +12,7 @@ export const verifyToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, accessTokenSecrete);
     const user = await User.findById(decoded._id).select('-password -createdAt -updatedAt -__v');
+    
     req.user = user;
     next();
   }
