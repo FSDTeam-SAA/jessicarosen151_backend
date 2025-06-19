@@ -233,9 +233,17 @@ export const updateResource = async (req, res) => {
       }
     }
 
+    const isURL = (value) =>
+    typeof value === "string" && /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(value);
+
+
     if (imageFiles.length) {
       const uploadedImages = [];
       for (const imageFile of imageFiles) {
+        if (isURL(imageFile)) {
+          uploadedImages.push(imageFile);
+          continue;
+        }
         const result = await cloudinaryUpload(
           imageFile.path,
           `img_${Date.now()}`,
