@@ -30,7 +30,7 @@ export const getAllResourcesService = async (
 
   if (status) query.status = new RegExp(`^${status}$`, "i");
   if (fileType) query["file.type"] = new RegExp(`^${fileType}$`, "i");
-  if (price) query.resultantPrice = { $gte: price[0], $lte: price[1] };
+  if (price) query.discountPrice = { $gte: parseInt(price[0]), $lte: parseInt(price[1]) };
   if (country) query.country = new RegExp(`^${country}$`, "i");
   if (states) query.states = { $in: states.map(s => new RegExp(`^${s}$`, "i")) };
 

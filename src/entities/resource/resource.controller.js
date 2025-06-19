@@ -258,6 +258,7 @@ export const updateResource = async (req, res) => {
 
 
 
+
 export const deleteResource = async (req, res) => {
   try {
     const deleted = await deleteResourceService(req.params.id, req.user);
