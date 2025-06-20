@@ -189,6 +189,7 @@ export const updateResource = async (req, res) => {
       states,
       resourceType,
       practiceAreas,
+      status
     } = req.body;
 
     const thumbnailFile = req.files?.thumbnail?.[0];
@@ -207,6 +208,7 @@ export const updateResource = async (req, res) => {
     if (states !== undefined) updatedFields.states = states;
     if (resourceType !== undefined) updatedFields.resourceType = resourceType;
     if (practiceAreas !== undefined) updatedFields.practiceAreas = practiceAreas;
+    if (status !== undefined) updatedFields.status = status;
 
     if (thumbnailFile) {
       const result = await cloudinaryUpload(

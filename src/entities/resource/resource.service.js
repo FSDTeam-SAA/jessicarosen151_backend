@@ -260,9 +260,13 @@ export const updateResourceService = async (id, updateData, user) => {
       throw new Error("Sellers can only update their own resources");
     }
 
-    if (updateData.status) {
+    if (updateData.status !== undefined) {
       throw new Error("Only admin can update the status of a resource");
     }
+  }
+
+  if (user.role !== "ADMIN" && updateData.status !== undefined) {
+    delete updateData.status;
   }
 
   const updated = await Resource.findByIdAndUpdate(id, updateData, { new: true });
