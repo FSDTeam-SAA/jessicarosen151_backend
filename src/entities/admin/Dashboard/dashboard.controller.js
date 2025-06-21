@@ -37,25 +37,57 @@ export const getTotalRevenueReport = async (req, res) => {
 
 export const getAdminSalesHistory = async (req, res) => {
   try {
-    const { search = "" } = req.query;
+    const { search = "", page = 1, limit = 10 } = req.query;
 
-    const result = await getAdminSalesHistoryService(req.user._id, search.trim());
+    const { data, pagination } = await getAdminSalesHistoryService(
+      req.user._id,
+      search.trim(),
+      parseInt(page),
+      parseInt(limit)
+    );
 
-    generateResponse(res, 200, true, "Admin sales history fetched", result);
+    res.status(200).json({
+      success: true,
+      message: "Admin sales history fetched",
+      data,
+      pagination
+    });
   } catch (error) {
-    generateResponse(res, 500, false, "Failed to fetch admin sales", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch admin sales",
+      error: error.message
+    });
   }
 };
+
+
 
 
 export const getRevenueFromSeller = async (req, res) => {
   try {
-    const result = await getRevenueFromSellerService();
-    generateResponse(res, 200, true, "Revenue from sellers fetched", result);
+    const { page = 1, limit = 10 } = req.query;
+
+    const { data, pagination } = await getRevenueFromSellerService(
+      parseInt(page),
+      parseInt(limit)
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Revenue from sellers fetched",
+      data,
+      pagination
+    });
   } catch (error) {
-    generateResponse(res, 500, false, "Failed to fetch revenue from sellers", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch revenue from sellers",
+      error: error.message
+    });
   }
 };
+
 
 
 
