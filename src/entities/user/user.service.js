@@ -342,17 +342,17 @@ export const deleteUserPDF = async (id) => {
 };
 
 
-export const getUserOrdersSevice = async (userId) => {
+export const getUserOrdersSevice = async (userId, page = 1, limit = 10) => {
   const orders = await Order.find({ user: userId, paymentStatus: "paid" })
     .sort({ createdAt: -1 })
     .select("items.price items.status items.resource createdAt")
     .populate({
       path: "items.resource",
-      select: "title file" 
+      select: "title file"
     })
     .lean();
 
-  const formatted = orders.flatMap(order =>
+  const allItems = orders.flatMap(order =>
     order.items.map(item => ({
       orderId: order._id,
       resourceName: item.resource?.title || "N/A",
@@ -367,8 +367,23 @@ export const getUserOrdersSevice = async (userId) => {
     }))
   );
 
-  return formatted;
+  const totalItems = allItems.length;
+  const totalPages = Math.ceil(totalItems / limit);
+  const skip = (page - 1) * limit;
+
+  const data = allItems.slice(skip, skip + limit);
+
+  return {
+    data,
+    pagination: {
+      currentPage: page,
+      totalPages,
+      totalItems,
+      itemsPerPage: limit
+    }
+  };
 };
+
 
 
 
@@ -393,9 +408,16 @@ export const getOrderDetailsService = async (orderId, userId) => {
 
 
 
-export const getUserProfilesWithOrderStatsService = async () => {
-  // Step 1: Get all users with role USER
-  const users = await User.find({ role: 'USER' }, '_id firstName profileImage');
+export const getUserProfilesWithOrderStatsService = async (page = 1, limit = 10) => {
+   const skip = (page - 1) * limit;
+
+  // Step 1: Count total users
+  const totalItems = await User.countDocuments({ role: 'USER' });
+
+  // Step 2: Get paginated users
+  const users = await User.find({ role: 'USER' }, '_id firstName profileImage')
+    .skip(skip)
+    .limit(limit);
 
   // Step 2: Aggregate order stats for those users only
   const userIds = users.map(user => user._id);
@@ -429,8 +451,8 @@ export const getUserProfilesWithOrderStatsService = async () => {
     statsMap[stat._id.toString()] = stat;
   });
 
-  // Step 3: Merge users with stats
-  const result = users.map(user => {
+  // Step 4: Merge users with stats
+  const data = users.map(user => {
     const stat = statsMap[user._id.toString()] || {};
     return {
       id: user._id,
@@ -443,7 +465,15 @@ export const getUserProfilesWithOrderStatsService = async () => {
     };
   });
 
-  return result;
+   return {
+    data,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+      itemsPerPage: limit
+    }
+  };
 };
 
 
@@ -503,18 +533,22 @@ export const getUserProfileWithStatsServiceId = async (userId) => {
 };
 
 
-export const getSellerProfilesWithSalesStatsService = async () => {
+export const getSellerProfilesWithSalesStatsService = async (page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
 
-  const sellers = await User.find({ role: 'SELLER' }, '_id firstName profileImage');
+  // Step 1: Count total sellers
+  const totalItems = await User.countDocuments({ role: 'SELLER' });
+
+  // Step 2: Paginated seller fetch
+  const sellers = await User.find({ role: 'SELLER' }, '_id firstName profileImage')
+    .skip(skip)
+    .limit(limit);
+
   const sellerIds = sellers.map(seller => seller._id);
 
-  // Step 2: Count products (resources) for each seller
+  // Step 3: Count resources per seller
   const resourceCounts = await Resource.aggregate([
-    {
-      $match: {
-        createdBy: { $in: sellerIds }
-      }
-    },
+    { $match: { createdBy: { $in: sellerIds } } },
     {
       $group: {
         _id: '$createdBy',
@@ -528,15 +562,24 @@ export const getSellerProfilesWithSalesStatsService = async () => {
     productMap[item._id.toString()] = item.SellerProduct;
   });
 
-  const result = sellers.map(seller => ({
+  const data = sellers.map(seller => ({
     id: seller._id,
     name: seller.firstName,
     profileImage: seller.profileImage || '',
     SellerProduct: productMap[seller._id.toString()] || 0
   }));
 
-  return result;
+  return {
+    data,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+      itemsPerPage: limit
+    }
+  };
 };
+
 
 
 export const getSellerProfileWithStatsServiceId = async (sellerId) => {

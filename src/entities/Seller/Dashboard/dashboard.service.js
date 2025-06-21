@@ -207,47 +207,60 @@ const formatMonth = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSta
 
 
 
-export const getSellerSalesHistoryService = async (adminId, search) => {
-  const sales = await Order.aggregate([
-    { $unwind: "$items" },
-    {
-      $match: {
-        "items.seller": adminId,
-        paymentStatus: "paid"
+export const getSellerSalesHistoryService = async (sellerId, search, page = 1, limit = 10) => {
+  const matchStage = {
+    $match: {
+      "items.seller": sellerId,
+      paymentStatus: "paid"
+    }
+  };
+
+  const searchMatch = search
+    ? {
+        $match: {
+          "resource.productId": { $regex: search, $options: "i" }
+        }
       }
-    },
+    : null;
+
+  const basePipeline = [
+    { $unwind: "$items" },
+    matchStage,
     {
       $group: {
         _id: "$items.resource",
         quantity: { $sum: "$items.quantity" },
-        amount: 
-        { $sum: {
-                $divide: [
-                { $multiply: ["$items.price", "$items.quantity"] },
-                2 
-                ]
-            }}
+        amount: {
+          $sum: {
+            $divide: [
+              { $multiply: ["$items.price", "$items.quantity"] },
+              2
+            ]
+          }
         }
+      }
     },
     {
       $lookup: {
-        from: "resources", 
+        from: "resources",
         localField: "_id",
         foreignField: "_id",
         as: "resource"
       }
     },
-    { $unwind: "$resource" },
+    { $unwind: "$resource" }
+  ];
 
-    // Optional search filter
-    ...(search
-      ? [{
-          $match: {
-            "resource.productId": { $regex: search, $options: "i" }
-          }
-        }]
-      : []),
+  if (searchMatch) basePipeline.push(searchMatch);
 
+  const countPipeline = [...basePipeline, { $count: "total" }];
+  const countResult = await Order.aggregate(countPipeline);
+  const totalItems = countResult[0]?.total || 0;
+
+  const skip = (page - 1) * limit;
+
+  const finalPipeline = [
+    ...basePipeline,
     {
       $project: {
         productId: "$resource.productId",
@@ -256,10 +269,22 @@ export const getSellerSalesHistoryService = async (adminId, search) => {
         _id: 0
       }
     },
-    { $sort: { productId: -1 } }
-  ]);
+    { $sort: { productId: -1 } },
+    { $skip: skip },
+    { $limit: limit }
+  ];
 
-  return sales;
+  const data = await Order.aggregate(finalPipeline);
+
+  return {
+    data,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+      itemsPerPage: limit
+    }
+  };
 };
 
 
