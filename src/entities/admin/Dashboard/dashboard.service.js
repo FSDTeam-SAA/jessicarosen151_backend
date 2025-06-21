@@ -309,15 +309,25 @@ export const getTotalRevenueReportService = async (filter = "month") => {
 
 
 
-export const getAdminSalesHistoryService = async (adminId, search) => {
-  const sales = await Order.aggregate([
-    { $unwind: "$items" },
-    {
-      $match: {
-        "items.seller": adminId,
-        paymentStatus: "paid"
+export const getAdminSalesHistoryService = async (adminId, search, page = 1, limit = 10) => {
+  const matchStage = {
+    $match: {
+      "items.seller": adminId,
+      paymentStatus: "paid"
+    }
+  };
+
+  const searchStage = search
+    ? {
+        $match: {
+          "resource.productId": { $regex: search, $options: "i" }
+        }
       }
-    },
+    : null;
+
+  const aggregatePipeline = [
+    { $unwind: "$items" },
+    matchStage,
     {
       $group: {
         _id: "$items.resource",
@@ -327,23 +337,25 @@ export const getAdminSalesHistoryService = async (adminId, search) => {
     },
     {
       $lookup: {
-        from: "resources", 
+        from: "resources",
         localField: "_id",
         foreignField: "_id",
         as: "resource"
       }
     },
-    { $unwind: "$resource" },
+    { $unwind: "$resource" }
+  ];
 
-    // Optional search filter
-    ...(search
-      ? [{
-          $match: {
-            "resource.productId": { $regex: search, $options: "i" }
-          }
-        }]
-      : []),
+  if (searchStage) aggregatePipeline.push(searchStage);
 
+  // Clone for count
+  const countPipeline = [...aggregatePipeline, { $count: "total" }];
+  const countResult = await Order.aggregate(countPipeline);
+  const totalItems = countResult[0]?.total || 0;
+
+  const skip = (page - 1) * limit;
+
+  aggregatePipeline.push(
     {
       $project: {
         productId: "$resource.productId",
@@ -352,15 +364,29 @@ export const getAdminSalesHistoryService = async (adminId, search) => {
         _id: 0
       }
     },
-    { $sort: { productId: -1 } }
-  ]);
+    { $sort: { productId: -1 } },
+    { $skip: skip },
+    { $limit: limit }
+  );
 
-  return sales;
+  const data = await Order.aggregate(aggregatePipeline);
+
+  return {
+    data,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+      itemsPerPage: limit
+    }
+  };
 };
 
 
-export const getRevenueFromSellerService = async () => {
-  const revenue = await Order.aggregate([
+
+
+export const getRevenueFromSellerService = async (page = 1, limit = 10) => {
+  const basePipeline = [
     { $unwind: "$items" },
     {
       $match: {
@@ -384,7 +410,6 @@ export const getRevenueFromSellerService = async () => {
         _id: 0
       }
     },
-    // Join with User model to get seller info
     {
       $lookup: {
         from: "users",
@@ -399,7 +424,6 @@ export const getRevenueFromSellerService = async () => {
         "sellerInfo.role": "SELLER"
       }
     },
-    // Join with Resource model to get product info
     {
       $lookup: {
         from: "resources",
@@ -418,9 +442,33 @@ export const getRevenueFromSellerService = async () => {
       }
     },
     { $sort: { sellerName: 1 } }
-  ]);
+  ];
 
-  return revenue;
+  // Count pipeline
+  const countPipeline = [...basePipeline, { $count: "total" }];
+  const countResult = await Order.aggregate(countPipeline);
+  const totalItems = countResult[0]?.total || 0;
+
+  const skip = (page - 1) * limit;
+
+  // Final paginated pipeline
+  const paginatedPipeline = [
+    ...basePipeline,
+    { $skip: skip },
+    { $limit: limit }
+  ];
+
+  const data = await Order.aggregate(paginatedPipeline);
+
+  return {
+    data,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(totalItems / limit),
+      totalItems,
+      itemsPerPage: limit
+    }
+  };
 };
 
 
