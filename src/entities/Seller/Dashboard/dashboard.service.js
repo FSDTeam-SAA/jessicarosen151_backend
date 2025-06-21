@@ -269,7 +269,7 @@ export const getSellerSalesHistoryService = async (sellerId, search, page = 1, l
         _id: 0
       }
     },
-    { $sort: { productId: -1 } },
+    { $sort: { createdAt: -1 } },
     { $skip: skip },
     { $limit: limit }
   ];
