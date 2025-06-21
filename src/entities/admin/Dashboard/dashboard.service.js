@@ -364,7 +364,7 @@ export const getAdminSalesHistoryService = async (adminId, search, page = 1, lim
         _id: 0
       }
     },
-    { $sort: { productId: -1 } },
+    { $sort: { createdAt: -1 } },
     { $skip: skip },
     { $limit: limit }
   );
@@ -441,7 +441,7 @@ export const getRevenueFromSellerService = async (page = 1, limit = 10) => {
         revenueFromSeller: 1
       }
     },
-    { $sort: { sellerName: 1 } }
+    { $sort: { createdAt: -1 } }
   ];
 
   // Count pipeline

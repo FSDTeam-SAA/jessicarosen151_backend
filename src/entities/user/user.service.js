@@ -417,7 +417,8 @@ export const getUserProfilesWithOrderStatsService = async (page = 1, limit = 10)
   // Step 2: Get paginated users
   const users = await User.find({ role: 'USER' }, '_id firstName profileImage')
     .skip(skip)
-    .limit(limit);
+    .limit(limit)
+    .sort({ createdAt: -1 })
 
   // Step 2: Aggregate order stats for those users only
   const userIds = users.map(user => user._id);
@@ -542,7 +543,8 @@ export const getSellerProfilesWithSalesStatsService = async (page = 1, limit = 1
   // Step 2: Paginated seller fetch
   const sellers = await User.find({ role: 'SELLER' }, '_id firstName profileImage')
     .skip(skip)
-    .limit(limit);
+    .limit(limit)
+    .sort({ createdAt: -1 });
 
   const sellerIds = sellers.map(seller => seller._id);
 
