@@ -25,13 +25,27 @@ export const getSellerRevenueReport = async (req, res) => {
 
 export const getSellerSalesHistory = async (req, res) => {
   try {
-    const { search = "" } = req.query;
+    const { search = "", page = 1, limit = 10 } = req.query;
 
-    const result = await getSellerSalesHistoryService(req.user._id, search.trim());
+    const { data, pagination } = await getSellerSalesHistoryService(
+      req.user._id,
+      search.trim(),
+      parseInt(page),
+      parseInt(limit)
+    );
 
-    generateResponse(res, 200, true, "Seller sales history fetched", result);
+    res.status(200).json({
+      success: true,
+      message: "Seller sales history fetched",
+      data,
+      pagination
+    });
   } catch (error) {
-    generateResponse(res, 500, false, "Failed to fetch  sales", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch sales",
+      error: error.message
+    });
   }
 };
 

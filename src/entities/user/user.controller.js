@@ -207,13 +207,25 @@ export const deleteUserPDFController = async (req, res) => {
 export const getUserOrders = async (req, res) => {
   try {
     const userId = req.user._id;
-    
-    const orders = await getUserOrdersSevice(userId);
-    generateResponse(res, 200, true, "Orders fetched successfully", orders);
+    const { page = 1, limit = 10 } = req.query;
+
+    const { data, pagination } = await getUserOrdersSevice(
+      userId,
+      parseInt(page),
+      parseInt(limit)
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Orders fetched successfully",
+      data: data,
+      pagination: pagination
+    });
   } catch (err) {
     generateResponse(res, 500, false, "Failed to fetch orders", err.message);
   }
 };
+
 
 
 export const getOrderDetails = async (req, res) => {
@@ -233,13 +245,29 @@ export const getOrderDetails = async (req, res) => {
 
 export const getUserProfilesWithOrderStats = async (req, res) => {
   try {
-    const users = await getUserProfilesWithOrderStatsService();
-    generateResponse(res, 200, 'success', 'User profiles fetched successfully', users);
+    const { page = 1, limit = 10 } = req.query;
+
+    const { data, pagination } = await getUserProfilesWithOrderStatsService(
+      parseInt(page),
+      parseInt(limit)
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'User profiles fetched successfully',
+      data,
+      pagination
+    });
   } catch (error) {
     console.error(error);
-    generateResponse(res, 500, 'fail', 'Something went wrong', null);
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong',
+      data: null
+    });
   }
 };
+
 
 
 export const getUserProfilesWithOrderStatsId = async (req, res) => {
@@ -261,13 +289,29 @@ export const getUserProfilesWithOrderStatsId = async (req, res) => {
 
 export const getSellerProfilesWithSalesStats = async (req, res) => {
   try {
-    const sellers = await getSellerProfilesWithSalesStatsService();
-    generateResponse(res, 200, 'success', 'Seller profiles fetched successfully', sellers);
+    const { page = 1, limit = 10 } = req.query;
+
+    const { data, pagination } = await getSellerProfilesWithSalesStatsService(
+      parseInt(page),
+      parseInt(limit)
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Seller profiles fetched successfully',
+      data,
+      pagination
+    });
   } catch (error) {
     console.error(error);
-    generateResponse(res, 500, 'fail', 'Something went wrong', null);
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong',
+      data: null
+    });
   }
 };
+
 
 
 export const getSellerProfileWithStatsById = async (req, res) => {
