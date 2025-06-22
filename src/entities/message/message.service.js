@@ -1,5 +1,5 @@
 import Message from "./message.model.js";
-import { io } from "../../app.js";
+// import { io } from "../../app.js";
 
 export const sendMessageService = async (resource,message) => {
 
@@ -8,28 +8,29 @@ export const sendMessageService = async (resource,message) => {
     if (!newMessage) {
          newMessage = new Message({
             resource,
-            messages: []
+            messages: [message]
         });
         await newMessage.save();
+        return newMessage;
     }
-    else
-    {
-        const updateMessage = await Message.findByIdAndUpdate(
-            newMessage._id,
-            { $push: { messages: message } },
-            { new: true, upsert: true }
-        );
+     else
+     {
+         const updateMessage = await Message.findByIdAndUpdate(
+             newMessage._id,
+             { $push: { messages: message } },
+             { new: true, upsert: true }
+         );
         
-        // socket.io emit
-        io.to(`room-${resource}`).emit("message", {
-            message: message,
-            sender: message.sender,
-            resourceId: resource,
-            createdAt: new Date(),
-        });
+         // socket.io emit
+    //    io.to(`room-${resource}`).emit("message", {
+    //          message: message,
+    //          sender: message.sender,
+    //          resourceId: resource,
+    //          createdAt: new Date(),
+    //      });
 
         return updateMessage;
-    }
+     }
 };
 
 
