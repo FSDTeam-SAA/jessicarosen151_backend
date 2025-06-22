@@ -16,7 +16,7 @@ import appRouter from './core/app/appRouter.js';
 import bodyParser from 'body-parser';
 // socket import
 import { createServer } from 'http';
-import { Server } from 'socket.io';
+// import { Server } from 'socket.io';
 import { stripeWebhookHandler } from './entities/Payment/stripeWebhook.controller.js';
 
 
@@ -39,12 +39,12 @@ app.use(mongoSanitize());
 
 // Socket IO setup
 const server = createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-});
+// const io = new Server(server, {
+//   cors: {
+//     origin: "*",
+//     methods: ["GET", "POST"],
+//   },
+// });
 
 
 
@@ -72,21 +72,21 @@ app.use('/api', appRouter);
 
 
 // Socket IO connection
-io.on("connection", (socket) => {
+//io.on("connection", (socket) => {
   // console.log("New client connected",socket.id);
 
   // Join a room
-  socket.on("joinRoom", (room) => {
-    socket.join(`room-${room}`);
-    console.log(`Client ${room} joined room: ${room}`);
-  });
+  //socket.on("joinRoom", (room) => {
+    //socket.join(`room-${room}`);
+  //  console.log(`Client ${room} joined room: ${room}`);
+  //});
 
 
 
-  socket.on("disconnect", () => {
-    console.log("Client disconnected");
-  });
-});
+ // socket.on("disconnect", () => {
+  //  console.log("Client disconnected");
+  //});/
+//});
 
 
 
@@ -99,6 +99,6 @@ app.use(errorHandler);
 logger.info('Middleware stack initialized');
 
 //Export the app
-export {app, server, io};
+export {app, server};
 
 
