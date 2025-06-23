@@ -33,18 +33,15 @@ export const getAllReviewsOfResource = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    try {
-        const reviews = await getAllReviewsOfProductService(resourceId, page, limit, skip)
-        generateResponse(res, 200, true, "Reviews fetched successfully", reviews);
-    }
 
-    catch (error) {
+    try {
+        const reviews = await getAllReviewsOfProductService(resourceId, page, limit, skip);
+        generateResponse(res, 200, true, "Reviews fetched successfully", reviews);
+    } catch (error) {
         if (error.message === "Resource ID is required") {
             generateResponse(res, 400, false, error.message, null);
-        }
-
-        else {
-            next(error)
+        } else {
+            next(error);
         }
     }
-}
+};

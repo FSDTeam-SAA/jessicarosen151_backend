@@ -10,44 +10,63 @@ export const createReviewService = async ({ resourceId, userId, rating, comment 
     return
 };
 
+
 export const getAllReviewsOfProductService = async (resourceId, page, limit, skip) => {
     if (!resourceId) throw new Error("Resource ID is required");
 
-    const [reviews, totalItems, averageRatingArray] = await Promise.all([
+    const objectId = new mongoose.Types.ObjectId(resourceId);
+
+    const [reviews, totalItems, ratingStats, lastThreeReviews] = await Promise.all([
         Review.find({ resourceId })
             .select("-__v -updatedAt -resourceId")
             .populate("userId", "firstName lastName email profileImage")
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit),
+            .limit(3),
 
         Review.countDocuments({ resourceId }),
 
         Review.aggregate([
-            { $match: { resourceId: new mongoose.Types.ObjectId(resourceId) } },
+            { $match: { resourceId: objectId } },
             {
                 $group: {
-                    _id: "$resourceId",
-                    averageRating: { $avg: "$rating" }
+                    _id: "$rating",
+                    count: { $sum: 1 }
                 }
             }
-        ])
-    ])
+        ]),
 
-    const averageRating = averageRatingArray[0] ? averageRatingArray[0].averageRating : 0;
+        
+    ]);
+
+    const averageRatingAgg = await Review.aggregate([
+        { $match: { resourceId: objectId } },
+        {
+            $group: {
+                _id: "$resourceId",
+                averageRating: { $avg: "$rating" }
+            }
+        }
+    ]);
+
+    const averageRating = averageRatingAgg[0]?.averageRating || 0;
+
+    // Build rating breakdown (1 to 5 stars)
+    const ratingBreakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    ratingStats.forEach(stat => {
+        ratingBreakdown[stat._id] = stat.count;
+    });
 
     const totalPages = Math.ceil(totalItems / limit);
 
     const data = {
         reviews,
-        pagination: {
-            currentPage: page,
-            totalPages,
-            totalItems,
-            itemsPerPage: limit
-        },
-        averageRating
-    }
+        averageRating,
+        totalReviews: totalItems,
+        ratingBreakdown,
+        lastThreeReviews
+    };
 
     return data;
-}
+};
+
