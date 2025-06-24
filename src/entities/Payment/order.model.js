@@ -72,7 +72,6 @@ const orderSchema = new Schema(
       ref: 'PromoCode',
       default: null
     },
-    
     deliveredAt: Date,
     cancelledAt: Date
   },
