@@ -10,7 +10,7 @@ const promoCodeSchema = new Schema(
     },
     discountType: {
       type: String,
-      enum: ["Percentage", "Fixed"],
+      enum: ["Percentage", "Fixed","percentage", "fixed"],
       required: true,
       default: "Percentage",
     },
