@@ -67,7 +67,7 @@ export const applyPromoCodeService = async (code, price) => {
 
   let discountAmount = 0;
 
-  if (promo.discountType === "percentage") {
+  if (promo.discountType === "Percentage") {
     const percent = Math.min(promo.discountValue || 0, 100);
     discountAmount = (percent / 100) * price;
   } else if (promo.discountType === "fixed") {
