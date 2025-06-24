@@ -66,9 +66,15 @@ export const deletePromoCode = async (req, res) => {
 
 export const applyPromoCode = async (req, res) => {
   try {
-    const { code } = req.body;
-    const promo = await applyPromoCodeService(code);
-    generateResponse(res, 200, true, "Promo code applied successfully", promo);
+    const { code, price } = req.body;
+
+    if (!price || price <= 0) {
+      return generateResponse(res, 400, false, "Invalid price provided");
+    }
+
+    const result = await applyPromoCodeService(code, price);
+
+    generateResponse(res, 200, true, "Promo code applied successfully", result);
   } catch (error) {
     generateResponse(res, 400, false, "Failed to apply promo code", error.message);
   }
