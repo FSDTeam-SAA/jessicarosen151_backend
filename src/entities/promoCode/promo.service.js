@@ -50,24 +50,51 @@ export const deletePromoCodeService = async (id) => {
   return deleted;
 };
 
-
-export const applyPromoCodeService = async (code) => {
+export const applyPromoCodeService = async (code, price) => {
   const promo = await PromoCode.findOne({ code: code.trim().toUpperCase() });
 
   if (!promo) throw new Error("Promo code not found");
   if (!promo.active) throw new Error("Promo code is inactive");
 
   const now = new Date();
-  if (promo.expiryDate <= now) throw new Error("Promo code has expired");
+  if (promo.expiryDate && promo.expiryDate <= now) {
+    throw new Error("Promo code has expired");
+  }
 
   if (promo.usageLimit && promo.usedCount >= promo.usageLimit) {
     throw new Error("Promo code usage limit exceeded");
   }
 
+  let discountAmount = 0;
+
+  if (promo.discountType === "percentage") {
+    const percent = Math.min(promo.discountValue || 0, 100);
+    discountAmount = (percent / 100) * price;
+  } else if (promo.discountType === "fixed") {
+    discountAmount = Math.max(promo.discountValue || 0, 0);
+  } else {
+    throw new Error("Invalid discount type");
+  }
+
+  const finalPrice = Math.max(price - discountAmount, 0);
+
+  // Increase usage count
   promo.usedCount += 1;
   await promo.save();
 
-  return promo;
+  return {
+    code: promo.code,
+    discountType: promo.discountType,
+    discountValue: promo.discountValue,
+    originalPrice: price,
+    discountAmount,
+    finalPrice,
+    expiryDate: promo.expiryDate,
+    usageLimit: promo.usageLimit,
+    usedCount: promo.usedCount,
+    special: promo.special,
+  };
 };
+
 
 
