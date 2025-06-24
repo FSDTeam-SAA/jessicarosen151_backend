@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 import Order from '../Payment/order.model.js';
 import User from '../auth/auth.model.js';
 import { generateResponse } from '../../lib/responseFormate.js';
+import PromoCode from '../promoCode/promo.model.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -30,7 +31,7 @@ export const stripeWebhookHandler = async (req, res) => {
 
 
 
-      
+
 
 
 
