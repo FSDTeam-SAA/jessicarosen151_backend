@@ -5,6 +5,8 @@ import { generateResponse } from '../../lib/responseFormate.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+
+
 export const stripeWebhookHandler = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -22,19 +24,35 @@ export const stripeWebhookHandler = async (req, res) => {
 
   try {
     switch (event.type) {
-      //Payment completed
-      case 'checkout.session.completed': {
-        const session = event.data.object;
-        const order = await Order.findOne({ stripeSessionId: session.id });
 
-        if (!order) break;
 
-        order.paymentStatus = 'paid';
-        order.transactionId = session.payment_intent;
-        await order.save();
+      
 
-        // Send 50% payout to each seller
-       
+
+
+      
+
+
+
+     // Inside this block
+case 'checkout.session.completed': {
+  const session = event.data.object;
+  const order = await Order.findOne({ stripeSessionId: session.id });
+
+  if (!order) break;
+
+  order.paymentStatus = 'paid';
+  order.transactionId = session.payment_intent;
+  await order.save();
+
+  // ✅ NEW: If order used a promo code, increment its usedCount
+  if (order.promocode) {
+    await PromoCode.findByIdAndUpdate(order.promocode, {
+      $inc: { usedCount: 1 }
+    });
+  }
+
+  // Send 50% payout to each seller
   for (const item of order.items) {
     const seller = await User.findById(item.seller);
     if (seller?.role === 'SELLER' && seller.stripeAccountId) {
@@ -54,8 +72,52 @@ export const stripeWebhookHandler = async (req, res) => {
     }
   }
 
-   break;
+  break;
 }
+
+    
+
+
+
+
+
+
+
+
+//       //Payment completed
+//       case 'checkout.session.completed': {
+//         const session = event.data.object;
+//         const order = await Order.findOne({ stripeSessionId: session.id });
+
+//         if (!order) break;
+
+//         order.paymentStatus = 'paid';
+//         order.transactionId = session.payment_intent;
+//         await order.save();
+
+//         // Send 50% payout to each seller
+       
+//   for (const item of order.items) {
+//     const seller = await User.findById(item.seller);
+//     if (seller?.role === 'SELLER' && seller.stripeAccountId) {
+//       const transferAmount = Math.floor(item.price * item.quantity * 0.5 * 100);
+//       try {
+//         await stripe.transfers.create({
+//           amount: transferAmount,
+//           currency: 'usd',
+//           destination: seller.stripeAccountId,
+//           transfer_group: session.metadata.transferGroup,
+//         });
+//         console.log(`Transfer succeeded for seller ${seller._id} amount: ${transferAmount}`);
+//       } catch (error) {
+//         console.error(`Transfer failed for seller ${seller._id}:`, error);
+//         // Optional: store transfer failure info in DB or notify admin here
+//       }
+//     }
+//   }
+
+//    break;
+// }
        
       
 
@@ -118,3 +180,5 @@ export const stripeWebhookHandler = async (req, res) => {
     generateResponse(res, 500, false, 'Webhook handler error', err.message);
   }
 };
+
+

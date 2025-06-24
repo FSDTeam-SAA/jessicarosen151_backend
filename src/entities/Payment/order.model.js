@@ -67,6 +67,11 @@ const orderSchema = new Schema(
     transferGroup: {
       type: String
     },
+    promocode: {
+      type: Schema.Types.ObjectId,
+      ref: 'PromoCode',
+      default: null
+    },
     
     deliveredAt: Date,
     cancelledAt: Date
