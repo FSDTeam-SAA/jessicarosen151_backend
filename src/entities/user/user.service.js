@@ -392,7 +392,7 @@ export const getOrderDetailsService = async (orderId, userId) => {
   const order = await Order.findOne({ _id: orderId, user: userId })
     .populate({
       path: 'items.resource',
-      select: 'title description file'
+      select: 'title description file thumbnail',
     })
     .populate({
       path: 'items.seller',
