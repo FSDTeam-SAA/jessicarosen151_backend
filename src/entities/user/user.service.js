@@ -348,7 +348,7 @@ export const getUserOrdersSevice = async (userId, page = 1, limit = 10) => {
     .select("items.price items.status items.resource createdAt")
     .populate({
       path: "items.resource",
-      select: "title file"
+      select: "title file thumbnail"
     })
     .lean();
 
@@ -357,6 +357,7 @@ export const getUserOrdersSevice = async (userId, page = 1, limit = 10) => {
       orderId: order._id,
       resourceName: item.resource?.title || "N/A",
       file: item.resource?.file || null,
+      thumbnail: item.resource?.thumbnail || null,
       price: `$${item.price.toFixed(2)}`,
       date: new Date(order.createdAt).toLocaleDateString("en-US", {
         year: "numeric",
