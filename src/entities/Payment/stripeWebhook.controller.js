@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 import Order from '../Payment/order.model.js';
 import User from '../auth/auth.model.js';
 import { generateResponse } from '../../lib/responseFormate.js';
+import Resource from '../resource/resource.model.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -30,34 +31,40 @@ export const stripeWebhookHandler = async (req, res) => {
         if (!order) break;
 
         order.paymentStatus = 'paid';
+        for (const item of order.items) {
+          await Resource.findByIdAndUpdate(item.resource, {
+            $inc: { quantity: -item.quantity }
+          });
+        }
+
         order.transactionId = session.payment_intent;
         await order.save();
 
         // Send 50% payout to each seller
-       
-  for (const item of order.items) {
-    const seller = await User.findById(item.seller);
-    if (seller?.role === 'SELLER' && seller.stripeAccountId) {
-      const transferAmount = Math.floor(item.price * item.quantity * 0.5 * 100);
-      try {
-        await stripe.transfers.create({
-          amount: transferAmount,
-          currency: 'usd',
-          destination: seller.stripeAccountId,
-          transfer_group: session.metadata.transferGroup,
-        });
-        console.log(`Transfer succeeded for seller ${seller._id} amount: ${transferAmount}`);
-      } catch (error) {
-        console.error(`Transfer failed for seller ${seller._id}:`, error);
-        // Optional: store transfer failure info in DB or notify admin here
-      }
-    }
-  }
 
-   break;
-}
-       
-      
+        for (const item of order.items) {
+          const seller = await User.findById(item.seller);
+          if (seller?.role === 'SELLER' && seller.stripeAccountId) {
+            const transferAmount = Math.floor(item.price * item.quantity * 0.5 * 100);
+            try {
+              await stripe.transfers.create({
+                amount: transferAmount,
+                currency: 'usd',
+                destination: seller.stripeAccountId,
+                transfer_group: session.metadata.transferGroup,
+              });
+              console.log(`Transfer succeeded for seller ${seller._id} amount: ${transferAmount}`);
+            } catch (error) {
+              console.error(`Transfer failed for seller ${seller._id}:`, error);
+              // Optional: store transfer failure info in DB or notify admin here
+            }
+          }
+        }
+
+        break;
+      }
+
+
 
       // Refund successful
       case 'charge.refunded': {

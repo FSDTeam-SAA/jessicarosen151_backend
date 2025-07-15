@@ -1,16 +1,19 @@
 import Stripe from 'stripe';
-import Cart from '../cart/cart.model.js';
 import User from '../auth/auth.model.js';
 import Resource from '../resource/resource.model.js';
 import Order from '../Payment/order.model.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export const createCheckoutSession = async (userId) => {
-  const cart = await Cart.findOne({ user: userId }).lean();
+export const createCheckoutSession = async (userId,itemsFromFrontend) => {
+
+   if (!itemsFromFrontend || itemsFromFrontend.length === 0) {
+    throw new Error('No items provided');
+  }
+ 
 
 //   console.log(cart);
-if (!cart || cart.length === 0) throw new Error('Cart is empty');
+
 
 
   const line_items = [];
@@ -19,15 +22,19 @@ if (!cart || cart.length === 0) throw new Error('Cart is empty');
   const orderItems = [];
   const transferGroup = `order_${Date.now()}`;
 
-  for (const item of cart.items) {
+   for (const item of itemsFromFrontend) {
     const resource = await Resource.findById(item.resource).lean();
-    if (!resource) throw new Error('Resource not found');
+    if (!resource) throw new Error(`Resource not found: ${item.resource}`);
+
+    if (item.quantity > resource.quantity) {
+      throw new Error(`Requested quantity for ${resource.title} exceeds available stock`);
+    }
 
     const seller = await User.findById(resource.createdBy).lean();
     if (!seller) throw new Error('Seller not found');
-    const price = item.price * item.quantity;
-    totalAmount += price;
+    const price = resource.price * item.quantity;
 
+    totalAmount += price;
     line_items.push({
       price_data: {
         currency: 'usd',
