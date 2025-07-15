@@ -2,19 +2,14 @@ import Stripe from 'stripe';
 import User from '../auth/auth.model.js';
 import Resource from '../resource/resource.model.js';
 import Order from '../Payment/order.model.js';
+import { applyPromoCodeService } from '../promoCode/promo.service.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-export const createCheckoutSession = async (userId,itemsFromFrontend) => {
-
-   if (!itemsFromFrontend || itemsFromFrontend.length === 0) {
+export const createCheckoutSession = async (userId, { itemsFromFrontend, promoCode }) => {
+  if (!itemsFromFrontend || itemsFromFrontend.length === 0) {
     throw new Error('No items provided');
   }
- 
-
-//   console.log(cart);
-
-
 
   const line_items = [];
   const transfer_map = [];
@@ -22,7 +17,7 @@ export const createCheckoutSession = async (userId,itemsFromFrontend) => {
   const orderItems = [];
   const transferGroup = `order_${Date.now()}`;
 
-   for (const item of itemsFromFrontend) {
+  for (const item of itemsFromFrontend) {
     const resource = await Resource.findById(item.resource).lean();
     if (!resource) throw new Error(`Resource not found: ${item.resource}`);
 
@@ -32,13 +27,16 @@ export const createCheckoutSession = async (userId,itemsFromFrontend) => {
 
     const seller = await User.findById(resource.createdBy).lean();
     if (!seller) throw new Error('Seller not found');
-    const price = resource.price * item.quantity;
 
-    totalAmount += price;
+    const unitPrice = resource.discountPrice || resource.price;
+    const itemPrice = unitPrice * item.quantity;
+
+    totalAmount += itemPrice;
+
     line_items.push({
       price_data: {
         currency: 'usd',
-        unit_amount: item.price * 100,
+        unit_amount: Math.round(unitPrice * 100),
         product_data: {
           name: resource.title,
         },
@@ -46,10 +44,9 @@ export const createCheckoutSession = async (userId,itemsFromFrontend) => {
       quantity: item.quantity,
     });
 
-    // 50% to seller if seller exists
     if (seller?.role === 'SELLER' && seller.stripeAccountId) {
       transfer_map.push({
-        amount: Math.floor((price * 0.5) * 100),
+        amount: Math.floor((itemPrice * 0.5) * 100),
         destination: seller.stripeAccountId,
       });
     }
@@ -58,14 +55,44 @@ export const createCheckoutSession = async (userId,itemsFromFrontend) => {
       resource: item.resource,
       seller: resource.createdBy,
       quantity: item.quantity,
-      price: item.price,
+      price: unitPrice,
     });
+  }
+
+  // Apply promo code to totalAmount
+  let finalAmount = totalAmount;
+  let discountAmount = 0;
+
+  if (promoCode) {
+    try {
+      const promoResult = await applyPromoCodeService(promoCode, totalAmount);
+      finalAmount = promoResult.finalPrice;
+      discountAmount = promoResult.discountAmount;
+
+      // Add a negative line item to reflect the discount
+      if (discountAmount > 0) {
+        line_items.push({
+          price_data: {
+            currency: 'usd',
+            unit_amount: Math.round(discountAmount * -100), // Negative amount
+            product_data: {
+              name: `Discount: ${promoCode}`,
+            },
+          },
+          quantity: 1,
+        });
+      }
+    } catch (err) {
+      throw new Error(`Promo code error: ${err.message}`);
+    }
   }
 
   const order = await Order.create({
     user: userId,
     items: orderItems,
-    totalAmount,
+    totalAmount: finalAmount,
+    discountAmount,
+    appliedPromoCode: promoCode || null,
     stripeSessionId: '',
     transferGroup,
     transactionId: '',
@@ -83,16 +110,15 @@ export const createCheckoutSession = async (userId,itemsFromFrontend) => {
       transferGroup,
     },
     payment_intent_data: {
-    transfer_group: transferGroup,
-  },
+      transfer_group: transferGroup,
+    },
   });
 
   order.stripeSessionId = session.id;
   await order.save();
 
   return {
-  sessionId: session.id,
-  url: session.url,
-};
-
+    sessionId: session.id,
+    url: session.url,
+  };
 };
