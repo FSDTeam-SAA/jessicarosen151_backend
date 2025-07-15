@@ -7,7 +7,6 @@ import blogRoutes from '../../entities/blog/blog.routes.js';
 import promoRoutes from '../../entities/promoCode/promo.routes.js';
 import contactRoutes from '../../entities/contact/contact.routes.js';
 import messageRoutes from '../../entities/message/message.routes.js';
-import cartRoutes from '../../entities/cart/cart.routes.js';
 import reviewRoutes from '../../entities/review/review.routes.js';
 import applicationRoutes from '../../entities/Seller/Application/application.routes.js'
 import countryRoutes from '../../entities/country/country.routes.js';
@@ -32,7 +31,6 @@ router.use('/v1/blog', blogRoutes);
 router.use('/v1/promo-codes', promoRoutes);
 router.use('/v1/contact', contactRoutes)
 router.use('/v1/message', messageRoutes);
-router.use('/v1/cart', cartRoutes);
 router.use('/v1/reviews', reviewRoutes);
 router.use('/v1/seller',applicationRoutes)
 router.use('/v1/stripe',sellerOnboardingRoutes);
