@@ -6,7 +6,7 @@ export const initiateCheckout = async (req, res) => {
    const items = req.body.items;
   console.log(userId);
   try {
-    const session = await createCheckoutSession(userId,items);
+    const session = await createCheckoutSession(userId,{  itemsFromFrontend: items,promoCode: req.body.promoCode});
     
     generateResponse(res, 200, true, 'Checkout session created successfully', {
       sessionId: session.sessionId,
