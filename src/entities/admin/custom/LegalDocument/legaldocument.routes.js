@@ -11,8 +11,8 @@ import { multerUpload } from '../../../../core/middlewares/multer.js';
 
 const router = express.Router();
 
-router.get('/', verifyToken, getAllLegalDocumentsController);
-router.get('/:id', verifyToken, getLegalDocumentByIdController);
+router.get('/',  getAllLegalDocumentsController);
+router.get('/:id', getLegalDocumentByIdController);
 router.post(
   '/',
   verifyToken,
