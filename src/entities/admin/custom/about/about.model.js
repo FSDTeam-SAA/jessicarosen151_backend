@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
-const heroSectionSchema = new Schema(
+const aboutSchema = new Schema(
   {
     title: {
       type: String,
@@ -14,16 +14,12 @@ const heroSectionSchema = new Schema(
       type: String,
       required: true,
     },
-    
-    country: {
-      type: String,
-      required: true,
-    },
+
   },
   {
     timestamps: true,
   }
 );
 
-const HeroSection = mongoose.model("HeroSection", heroSectionSchema);
-export default HeroSection;
+const About = mongoose.model("About", aboutSchema);
+export default About;
