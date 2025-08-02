@@ -14,7 +14,7 @@ const router = express.Router();
 
 // Admin protected routes for Hero Section
 router.get('/', getAllHeroSectionsController);
-router.get('/:id', verifyToken, getHeroSectionByIdController);
+router.get('/:id',  getHeroSectionByIdController);
 router.post('/', verifyToken, adminMiddleware,multerUpload([{ name: "image", maxCount: 1 }]), createHeroSectionController);
 router.put('/:id', verifyToken, adminMiddleware,multerUpload([{ name: "image", maxCount: 1 }]), updateHeroSectionController);
 router.delete('/:id', verifyToken, adminMiddleware, deleteHeroSectionController);

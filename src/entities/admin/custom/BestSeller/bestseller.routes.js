@@ -13,8 +13,8 @@ import { multerUpload } from '../../../../core/middlewares/multer.js';
 const router = express.Router();
 
 // Admin protected routes for Bestseller
-router.get('/', verifyToken, getAllBestSellersController);
-router.get('/:id', verifyToken, getBestSellerByIdController);
+router.get('/',  getAllBestSellersController);
+router.get('/:id', getBestSellerByIdController);
 router.post(
   '/',
   verifyToken,

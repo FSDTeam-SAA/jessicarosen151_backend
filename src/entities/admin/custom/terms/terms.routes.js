@@ -11,8 +11,8 @@ import { adminMiddleware, verifyToken } from '../../../../core/middlewares/authM
 const router = express.Router();
 
 // Routes for Terms (no image, so no multer)
-router.get('/', verifyToken, getAllTermsController);
-router.get('/:id', verifyToken, getTermsByIdController);
+router.get('/',  getAllTermsController);
+router.get('/:id', getTermsByIdController);
 router.post('/', verifyToken, adminMiddleware, createTermsController);
 router.put('/:id', verifyToken, adminMiddleware, updateTermsController);
 router.delete('/:id', verifyToken, adminMiddleware, deleteTermsController);

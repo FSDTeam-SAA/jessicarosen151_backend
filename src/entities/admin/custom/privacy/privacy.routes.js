@@ -12,10 +12,10 @@ import { adminMiddleware, verifyToken } from '../../../../core/middlewares/authM
 const router = express.Router();
 
 // No image upload required
-router.get('/', verifyToken, getAllPrivacyController);
-router.get('/:id', verifyToken, getPrivacyByIdController);
-router.post('/', verifyToken, adminMiddleware, createPrivacyController);
-router.put('/:id', verifyToken, adminMiddleware, updatePrivacyController);
-router.delete('/:id', verifyToken, adminMiddleware, deletePrivacyController);
+router.get('/',  getAllPrivacyController);
+router.get('/:id',  getPrivacyByIdController);
+router.post('/',  adminMiddleware, createPrivacyController);
+router.put('/:id',  adminMiddleware, updatePrivacyController);
+router.delete('/:id',  adminMiddleware, deletePrivacyController);
 
 export default router;
