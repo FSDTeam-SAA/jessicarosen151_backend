@@ -13,7 +13,7 @@ import { multerUpload } from '../../../../core/middlewares/multer.js';
 const router = express.Router();
 
 // Admin protected routes for Hero Section
-router.get('/', verifyToken, getAllHeroSectionsController);
+router.get('/', getAllHeroSectionsController);
 router.get('/:id', verifyToken, getHeroSectionByIdController);
 router.post('/', verifyToken, adminMiddleware,multerUpload([{ name: "image", maxCount: 1 }]), createHeroSectionController);
 router.put('/:id', verifyToken, adminMiddleware,multerUpload([{ name: "image", maxCount: 1 }]), updateHeroSectionController);
