@@ -13,7 +13,7 @@ export const createAbout = async (data, filePath) => {
 
 // Get all About sections
 export const getAllAbouts = async () => {
-  return await About.find();
+  return await About.findOne().sort({ createdAt: -1 }).limit(1);
 };
 
 // Get About section by ID
