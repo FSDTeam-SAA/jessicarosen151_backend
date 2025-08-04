@@ -15,7 +15,7 @@ export const createLegalDocument = async (data, filePath) => {
 
 // Get all legal documents
 export const getAllLegalDocuments = async () => {
-  return await LegalDocument.find();
+  return await LegalDocument.findOne().sort({ createdAt: -1 }).limit(1);
 };
 
 // Get legal document by ID
