@@ -7,7 +7,7 @@ export const createTerms = async (data) => {
 
 // Get all terms
 export const getAllTerms = async () => {
-  return await Terms.find();
+  return await Terms.findOne().sort({ createdAt: -1 }).limit(1);
 };
 
 // Get a single terms item by ID

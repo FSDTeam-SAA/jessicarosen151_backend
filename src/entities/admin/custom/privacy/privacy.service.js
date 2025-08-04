@@ -7,7 +7,7 @@ export const createPrivacy = async (data) => {
 
 // Get all privacy policies
 export const getAllPrivacy = async () => {
-  return await Privacy.find();
+  return await Privacy.findOne().sort({ createdAt: -1 }).limit(1);
 };
 
 // Get single privacy by ID
