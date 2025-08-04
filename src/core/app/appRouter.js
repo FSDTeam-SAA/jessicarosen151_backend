@@ -23,6 +23,7 @@ import bestsellerRoutes from '../../entities/admin/custom/BestSeller/bestseller.
 import legalDocumentRoutes from '../../entities/admin/custom/LegalDocument/legaldocument.routes.js';
 import privacyRoutes from '../../entities/admin/custom/privacy/privacy.routes.js';
 import termRoutes from '../../entities/admin/custom/terms/terms.routes.js';
+import subResourceType from '../../entities/subPracticeArea/subPracticeArea.routes.js';
 
 const router = express.Router();
 
@@ -33,6 +34,7 @@ router.use('/v1/practice-area', practiceAreaRoutes);
 router.use('/v1/country-state', countryRoutes);
 router.use('/v1/resource', resourceRoutes);
 router.use('/v1/resource-type', resourceTypesRoutes);
+router.use('/v1/sub-resource-type', subResourceType);
 router.use('/v1/blog', blogRoutes);
 router.use('/v1/promo-codes', promoRoutes);
 router.use('/v1/contact', contactRoutes)

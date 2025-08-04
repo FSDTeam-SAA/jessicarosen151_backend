@@ -4,10 +4,10 @@ import { createPracticeAreaService, getAllPracticeAreasService, getPracticeAreaB
 
 export const createPracticeArea = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, subPracticeAreas } = req.body;
     const createdBy = req.user._id;
 
-    const practiceArea = await createPracticeAreaService({ name, description, createdBy });
+    const practiceArea = await createPracticeAreaService({ name, description, createdBy , subPracticeAreas });
     generateResponse(res, 201, true, 'Practice Area created successfully', practiceArea);
   } catch (error) {
     generateResponse(res, 400, false, 'Failed to create Practice Area', error.message);
