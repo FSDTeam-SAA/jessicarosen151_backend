@@ -16,7 +16,7 @@ console.log("Creating hero section with data:", data, "and filePath:");
 
 // Get all hero sections
 export const getAllHeroSections = async () => {
-  return await HeroSection.find();
+  return await HeroSection.findOne().sort({ createdAt: -1 }).limit(1);
 };
 
 // Get hero section by ID
