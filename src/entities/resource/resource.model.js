@@ -73,6 +73,10 @@ const resourceSchema = new Schema(
     practiceAreas: {
       type: [String],
       default: []
+    },
+    subPracticeAreas: {
+      type: [String],
+      default: []
     }
   },
   {
