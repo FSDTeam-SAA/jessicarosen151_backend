@@ -17,7 +17,7 @@ export const createBestSeller = async (data, filePaths = []) => {
 
 // Get all bestsellers
 export const getAllBestSellers = async () => {
-  return await BestSeller.find();
+  return await BestSeller.findOne().sort({ createdAt: -1 }).limit(1);
 };
 
 // Get bestseller by ID

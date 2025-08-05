@@ -4,7 +4,11 @@ import { cloudinaryUpload } from "../../../../lib/cloudinaryUpload.js";
 // Create hero section
 export const createHeroSection = async (data, filePath) => {
 
-console.log("Creating hero section with data:", data, "and filePath:");
+  const currentHeroSection = await HeroSection.find().count();
+  if (currentHeroSection >= 2) {
+    throw new Error("Not more than 2 hero sections are allowed");
+  }
+  
 
   if (filePath) {
     const uploadResult = await cloudinaryUpload(filePath, `hero-${Date.now()}`, "hero-section");
@@ -16,7 +20,7 @@ console.log("Creating hero section with data:", data, "and filePath:");
 
 // Get all hero sections
 export const getAllHeroSections = async () => {
-  return await HeroSection.findOne().sort({ createdAt: -1 }).limit(1);
+  return await HeroSection.find().sort({ createdAt: -1 }).limit(2);
 };
 
 // Get hero section by ID
