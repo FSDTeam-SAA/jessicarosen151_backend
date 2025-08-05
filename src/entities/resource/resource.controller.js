@@ -25,7 +25,8 @@ export const createResource = async (req, res) => {
       country, 
       states, 
       resourceType, 
-      practiceAreas 
+      practiceAreas,
+      subPracticeAreas,
     } = req.body;
 
     const thumbnailFile = req.files?.thumbnail?.[0];
@@ -85,7 +86,8 @@ export const createResource = async (req, res) => {
       resourceType: resourceType || [],
       createdBy,
       status,
-      practiceAreas: practiceAreas || []
+      practiceAreas: practiceAreas || [],
+      subPracticeAreas: subPracticeAreas || []
     });
 
     generateResponse(res, 201, true, "Resource created successfully", resource);
@@ -111,12 +113,14 @@ export const getAllResources = async (req, res, next) => {
     states,
     format,
     sortedBy,
+    subPracticeAreas
   } = req.query;
 
   try {
     const priceRange = price ? price.split(',').map(Number) : null;
     const statesArray = states ? states.split(',') : null;
     const practiceAreasArray = practiceAreas ? practiceAreas.split(',') : null;
+    const subPracticeAreasArray = subPracticeAreas ? subPracticeAreas.split(',') : null;
     const resourceTypeArray = resourceType ? resourceType.split(',') : null;
     const formatArray = format ? format.split(',') : null;
 
@@ -134,7 +138,8 @@ export const getAllResources = async (req, res, next) => {
       country,
       statesArray,
       formatArray,
-      sortedBy
+      sortedBy,
+      subPracticeAreasArray
     );
 
     return res.status(200).json({
@@ -189,6 +194,7 @@ export const updateResource = async (req, res) => {
       states,
       resourceType,
       practiceAreas,
+      subPracticeAreas,
       status
     } = req.body;
 
@@ -208,6 +214,7 @@ export const updateResource = async (req, res) => {
     if (states !== undefined) updatedFields.states = states;
     if (resourceType !== undefined) updatedFields.resourceType = resourceType;
     if (practiceAreas !== undefined) updatedFields.practiceAreas = practiceAreas;
+    if (subPracticeAreas !== undefined) updatedFields.subPracticeAreas = subPracticeAreas;
     if (status !== undefined) updatedFields.status = status;
 
     if (thumbnailFile) {

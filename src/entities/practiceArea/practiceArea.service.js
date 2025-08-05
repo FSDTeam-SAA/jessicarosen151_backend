@@ -21,7 +21,6 @@ export const createPracticeAreaService = async ({ name, description, createdBy, 
 };
 
 
-
 export const getAllPracticeAreasService =async () => {
   const practiceAreas = await PracticeArea.find({}).limit(15).lean();
 
