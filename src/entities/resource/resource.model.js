@@ -62,7 +62,7 @@ const resourceSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["draft", "pending", "approved", "rejected"],
       default: "pending"
     },
     productId: {

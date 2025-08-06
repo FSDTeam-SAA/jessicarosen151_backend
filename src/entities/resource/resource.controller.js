@@ -27,6 +27,7 @@ export const createResource = async (req, res) => {
       resourceType, 
       practiceAreas,
       subPracticeAreas,
+      productStatus
     } = req.body;
 
     const thumbnailFile = req.files?.thumbnail?.[0];
@@ -87,7 +88,8 @@ export const createResource = async (req, res) => {
       createdBy,
       status,
       practiceAreas: practiceAreas || [],
-      subPracticeAreas: subPracticeAreas || []
+      subPracticeAreas: subPracticeAreas || [],
+      productStatus: productStatus,
     });
 
     generateResponse(res, 201, true, "Resource created successfully", resource);
