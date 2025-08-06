@@ -1,33 +1,41 @@
+
 import { generateResponse } from '../../lib/responseFormate.js';
 import User from './auth.model.js';
 import {
-  registerUserService,
   loginUserService,
   refreshAccessTokenService,
   forgetPasswordService,
   verifyCodeService,
   resetPasswordService,
-  changePasswordService
+  changePasswordService,
+  initiateRegisterUserService,
+  verifyRegisterOTPService,
+
 } from './auth.service.js';
 
 
-export const registerUser = async (req, res, next) => {
-  const { firstName, lastName, email, password } = req.body;
+export const initiateRegisterUser = async (req, res, next) => {
   try {
-
-    const data = await registerUserService({ firstName, lastName, email, password });
-    generateResponse(res, 201, true, 'Registered user successfully!', data);
+    const { firstName, lastName, phoneNumber, email, password } = req.body;
+    await initiateRegisterUserService({ firstName, lastName, phoneNumber, email, password });
+    generateResponse(res, 200, true, 'OTP sent to email', null);
+  } catch (error) {
+    if (error.message === 'User already verified') {
+      generateResponse(res, 400, false, 'User already registered.', null);
+    } else {
+      next(error);
+    }
   }
+};
 
-  catch (error) {
 
-    if (error.message === 'User already registered.') {
-      generateResponse(res, 400, false, 'User already registered', null);
-    }
-
-    else {
-      next(error)
-    }
+export const verifyRegisterOTP = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await verifyRegisterOTPService(email, otp);
+    generateResponse(res, 200, true, 'User verified successfully', user);
+  } catch (error) {
+    generateResponse(res, 400, false, error.message, null);
   }
 };
 
@@ -191,6 +199,7 @@ export const changePassword = async (req, res, next) => {
   }
 };
 
+
 export const logoutUser = async (req, res, next) => {
 
   const userId = req.user._id;
@@ -203,3 +212,5 @@ export const logoutUser = async (req, res, next) => {
     next(error);
   }
 };
+
+
