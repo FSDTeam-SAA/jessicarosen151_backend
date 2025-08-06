@@ -64,10 +64,10 @@ export const createResource = async (req, res) => {
       }
     }
 
-    let status = "pending";
-    if (req.user.role === "ADMIN") {
-      status = "approved";
-    }
+    // let status = "pending";
+    // if (req.user.role === "ADMIN") {
+    //   status = "approved";
+    // }
 
     const resource = await createResourceService({
       title,
@@ -86,10 +86,10 @@ export const createResource = async (req, res) => {
       states: states || [],
       resourceType: resourceType || [],
       createdBy,
-      status,
+      status:productStatus,
       practiceAreas: practiceAreas || [],
       subPracticeAreas: subPracticeAreas || [],
-      productStatus: productStatus,
+      
     });
 
     generateResponse(res, 201, true, "Resource created successfully", resource);
