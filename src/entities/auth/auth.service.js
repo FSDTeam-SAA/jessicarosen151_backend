@@ -71,6 +71,8 @@ export const loginUserService = async ({ email, password }) => {
 
   const user = await User.findOne({ email }).select("_id firstName lastName email role profileImage password isVerified refreshToken updatedAt");
 
+  console.log('user', user);
+
   if (!user) throw new Error('User not found');
   if (!user.isVerified) throw new Error('Please verify your email before logging in');
 
