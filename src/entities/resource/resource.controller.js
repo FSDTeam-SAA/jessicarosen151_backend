@@ -27,6 +27,7 @@ export const createResource = async (req, res) => {
       resourceType, 
       practiceAreas,
       subPracticeAreas,
+      productStatus
     } = req.body;
 
     const thumbnailFile = req.files?.thumbnail?.[0];
@@ -63,10 +64,10 @@ export const createResource = async (req, res) => {
       }
     }
 
-    let status = "pending";
-    if (req.user.role === "ADMIN") {
-      status = "approved";
-    }
+    // let status = "pending";
+    // if (req.user.role === "ADMIN") {
+    //   status = "approved";
+    // }
 
     const resource = await createResourceService({
       title,
@@ -85,9 +86,10 @@ export const createResource = async (req, res) => {
       states: states || [],
       resourceType: resourceType || [],
       createdBy,
-      status,
+      status:productStatus,
       practiceAreas: practiceAreas || [],
-      subPracticeAreas: subPracticeAreas || []
+      subPracticeAreas: subPracticeAreas || [],
+      
     });
 
     generateResponse(res, 201, true, "Resource created successfully", resource);
@@ -124,6 +126,10 @@ export const getAllResources = async (req, res, next) => {
     const resourceTypeArray = resourceType ? resourceType.split(',') : null;
     const formatArray = format ? format.split(',') : null;
 
+    
+
+
+
     const { data, pagination } = await getAllResourcesService(
       page,
       limit,
@@ -133,13 +139,14 @@ export const getAllResources = async (req, res, next) => {
       resourceTypeArray,
       priceRange,
       practiceAreasArray,
+      subPracticeAreasArray,
       fileType,
       search?.toLowerCase(),
       country,
       statesArray,
       formatArray,
       sortedBy,
-      subPracticeAreasArray
+      
     );
 
     return res.status(200).json({

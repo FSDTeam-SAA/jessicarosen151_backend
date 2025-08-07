@@ -105,6 +105,15 @@ const userAdminSellerMiddleware = (req, res, next) => {
   next();
 };
 
+const userAdminMiddleware = (req, res, next) => {
+  const { role } = req.user || {};
 
-export{ userMiddleware, adminMiddleware, sellerMiddleware, adminSellerMiddleware, userAdminSellerMiddleware };
+  if (![RoleType.USER, RoleType.ADMIN].includes(role))
+ {
+    return generateResponse(res, 403, false, 'User, Admin or Seller access only', null);
+  }
+  next();
+};
+
+export{ userMiddleware, adminMiddleware, sellerMiddleware, adminSellerMiddleware, userAdminSellerMiddleware, userAdminMiddleware };
 

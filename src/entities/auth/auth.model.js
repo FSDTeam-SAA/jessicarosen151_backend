@@ -17,9 +17,8 @@ const UserSchema = new mongoose.Schema(
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     phoneNumber: { type: String, default: '' },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true },
     password: { type: String, required: true },
-    username: { type: String, unique: true, default: '' },
     dob: { type: Date, default: null },
     gender: {
       type: String,
@@ -52,6 +51,10 @@ const UserSchema = new mongoose.Schema(
     otpExpires: {
       type: Date,
       default: null
+    },
+      isVerified: {
+      type: Boolean,
+      default: false,
     },
 
     refreshToken: {
