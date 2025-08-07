@@ -126,6 +126,10 @@ export const getAllResources = async (req, res, next) => {
     const resourceTypeArray = resourceType ? resourceType.split(',') : null;
     const formatArray = format ? format.split(',') : null;
 
+    
+
+
+
     const { data, pagination } = await getAllResourcesService(
       page,
       limit,
@@ -135,13 +139,14 @@ export const getAllResources = async (req, res, next) => {
       resourceTypeArray,
       priceRange,
       practiceAreasArray,
+      subPracticeAreasArray,
       fileType,
       search?.toLowerCase(),
       country,
       statesArray,
       formatArray,
       sortedBy,
-      subPracticeAreasArray
+      
     );
 
     return res.status(200).json({
