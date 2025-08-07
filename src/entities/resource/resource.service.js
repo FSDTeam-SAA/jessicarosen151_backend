@@ -19,6 +19,7 @@ export const getAllResourcesService = async (
   resourceType,
   price,
   practiceAreas,
+  subPracticeAreas,
   fileType,
   search,
   country,
@@ -28,16 +29,44 @@ export const getAllResourcesService = async (
 ) => {
   const query = sellerId ? { createdBy: sellerId } : {};
 
+  
+    // console.log(
+
+    //   "page:", page,
+    //   "limit:", limit,
+    //   "skip:", skip,
+    //   "status:", status,
+    //   "sellerId:", sellerId,
+    //   "resourceType:", resourceType,
+    //   "priceRange:", price,
+    //   "practiceAreasArray:", practiceAreas,
+    //   "subPracticeAreasArray:", subPracticeAreas,
+    //   "fileType:", fileType,
+    //   "search:", search,
+    //   "country:", country,
+    //   "statesArray:", states,
+    //   "formatArray:", formatArray,
+    //   "sortedBy:", sortedBy
+    // );
+  
+
   if (status) query.status = new RegExp(`^${status}$`, "i");
   if (fileType) query["file.type"] = new RegExp(`^${fileType}$`, "i");
   if (price) query.discountPrice = { $gte: parseInt(price[0]), $lte: parseInt(price[1]) };
   if (country) query.country = new RegExp(`^${country}$`, "i");
   if (states) query.states = { $in: states.map(s => new RegExp(`^${s}$`, "i")) };
 
+  console.log("query", query, "country", country, "states", states);
+
   if (practiceAreas) {
     query.practiceAreas = Array.isArray(practiceAreas)
       ? { $in: practiceAreas.map(p => new RegExp(`^${p}$`, "i")) }
       : new RegExp(`^${practiceAreas}$`, "i");
+  }
+  if (subPracticeAreas) {
+    query.subPracticeAreas = Array.isArray(subPracticeAreas)
+      ? { $in: subPracticeAreas.map(p => new RegExp(`^${p}$`, "i")) }
+      : new RegExp(`^${subPracticeAreas}$`, "i");
   }
 
   if (resourceType) {
@@ -52,6 +81,9 @@ export const getAllResourcesService = async (
       : new RegExp(`^${formatArray}$`, "i");
   }
 
+
+  console.log("query", query);
+
   const baseResources = await Resource.find(query)
     .select("-__v -updatedAt")
     .populate("createdBy", "firstName lastName email profileImage")
@@ -62,6 +94,7 @@ export const getAllResourcesService = async (
     const title = resource.title?.toLowerCase() || "";
     const desc = resource.description?.toLowerCase() || "";
     const areas = resource.practiceAreas?.map(a => a.toLowerCase()) || [];
+    const subAreas = resource.subPracticeAreas?.map(a => a.toLowerCase()) || [];
     const types = resource.resourceType?.map(t => t.toLowerCase()) || [];
     const format = resource.format?.toLowerCase() || "";
     const key = search?.toLowerCase();
@@ -70,6 +103,7 @@ export const getAllResourcesService = async (
     return (
       title.includes(key) ||
       desc.includes(key) ||
+      subAreas.some(a => a.includes(key)) ||
       areas.some(a => a.includes(key)) ||
       types.some(t => t.includes(key)) ||
       format.includes(key)
