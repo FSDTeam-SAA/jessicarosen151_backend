@@ -29,11 +29,34 @@ export const getAllResourcesService = async (
 ) => {
   const query = sellerId ? { createdBy: sellerId } : {};
 
+  
+    // console.log(
+
+    //   "page:", page,
+    //   "limit:", limit,
+    //   "skip:", skip,
+    //   "status:", status,
+    //   "sellerId:", sellerId,
+    //   "resourceType:", resourceType,
+    //   "priceRange:", price,
+    //   "practiceAreasArray:", practiceAreas,
+    //   "subPracticeAreasArray:", subPracticeAreas,
+    //   "fileType:", fileType,
+    //   "search:", search,
+    //   "country:", country,
+    //   "statesArray:", states,
+    //   "formatArray:", formatArray,
+    //   "sortedBy:", sortedBy
+    // );
+  
+
   if (status) query.status = new RegExp(`^${status}$`, "i");
   if (fileType) query["file.type"] = new RegExp(`^${fileType}$`, "i");
   if (price) query.discountPrice = { $gte: parseInt(price[0]), $lte: parseInt(price[1]) };
   if (country) query.country = new RegExp(`^${country}$`, "i");
   if (states) query.states = { $in: states.map(s => new RegExp(`^${s}$`, "i")) };
+
+  console.log("query", query, "country", country, "states", states);
 
   if (practiceAreas) {
     query.practiceAreas = Array.isArray(practiceAreas)
@@ -57,6 +80,9 @@ export const getAllResourcesService = async (
       ? { $in: formatArray.map(f => new RegExp(`^${f}$`, "i")) }
       : new RegExp(`^${formatArray}$`, "i");
   }
+
+
+  console.log("query", query);
 
   const baseResources = await Resource.find(query)
     .select("-__v -updatedAt")
