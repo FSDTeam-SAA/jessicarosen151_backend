@@ -5,6 +5,7 @@ import Order from "../Payment/order.model.js";
 
 
 export const createResourceService = async (data) => {
+  
   const resource = new Resource(data);
   return await resource.save();
 };
