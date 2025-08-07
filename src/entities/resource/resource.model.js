@@ -49,7 +49,8 @@ const resourceSchema = new Schema(
       }
     },
     thumbnail: {
-      type: String
+      type: String,
+      default: "https://celadonbooks.com/wp-content/uploads/2020/02/what-is-literary-fiction.jpg"
     },
     images: {
       type: [String],
