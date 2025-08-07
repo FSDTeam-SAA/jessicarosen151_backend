@@ -42,7 +42,19 @@ export const initiateRegisterUserService = async ({ firstName, lastName, phoneNu
   await sendEmail({
     to: email,
     subject: 'Your OTP Code',
-    html: `<p>Your verification code is: <strong>${otp}</strong></p>`
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px; background-color: #f9f9f9;">
+        <h1 style="color: #333; text-align: center;">Verification Code</h1>
+        <p style="font-size: 16px; color: #555;">Hello,</p>
+        <p style="font-size: 16px; color: #555;">Thank you for registering. Your verification code is:</p>
+        <p style="font-size: 24px; font-weight: bold; text-align: center; color: #007BFF;">${otp}</p>
+        <p style="font-size: 16px; color: #555;">Please enter this code within 10 minutes to verify your account.</p>
+        <p style="font-size: 16px; color: #555;">If you did not register, please ignore this email.</p>
+        <footer style="border-top: 1px solid #ddd; padding-top: 10px; margin-top: 20px; text-align: center; font-size: 12px; color: #aaa;">
+          &copy; 2025 Lawbie.com All rights reserved.
+        </footer>
+      </div>
+    `
   });
 };
 
