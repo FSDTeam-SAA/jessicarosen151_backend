@@ -5,6 +5,7 @@ import { verifyToken } from '../../core/middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/create-session',verifyToken, initiateCheckout);
+// router.post('/create-session',verifyToken, initiateCheckout);
+router.post('/create-session',initiateCheckout);
 
 export default router;
