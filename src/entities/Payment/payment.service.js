@@ -1,13 +1,14 @@
-import Stripe from "stripe";
-import User from "../auth/auth.model.js";
-import { applyPromoCodeService } from "../promoCode/promo.service.js";
-import Resource from "../resource/resource.model.js";
-import Order from "./order.model.js";
+import Stripe from 'stripe';
+import User from '../auth/auth.model.js';
+import { applyPromoCodeService } from '../promoCode/promo.service.js';
+import Resource from '../resource/resource.model.js';
+import Order from './order.model.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
 
-
-export const createCheckoutSession = async (userId, { itemsFromFrontend, promoCode }) => {
+export const createCheckoutSession = async (
+  { userId = null, guestId = null, itemsFromFrontend, promoCode }
+) => {
   if (!itemsFromFrontend || itemsFromFrontend.length === 0) {
     throw new Error('No items provided');
   }
@@ -15,7 +16,8 @@ export const createCheckoutSession = async (userId, { itemsFromFrontend, promoCo
   let totalAmount = 0;
   const orderItems = [];
   const transferGroup = `order_${Date.now()}`;
-const transfer_map = []
+  const transfer_map = [];
+
   for (const item of itemsFromFrontend) {
     const resource = await Resource.findById(item.resource).lean();
     if (!resource) throw new Error(`Resource not found: ${item.resource}`);
@@ -32,7 +34,7 @@ const transfer_map = []
 
     totalAmount += itemPrice;
 
-      if (seller?.role === 'SELLER' && seller.stripeAccountId) {
+    if (seller?.role === 'SELLER' && seller.stripeAccountId) {
       transfer_map.push({
         amount: Math.floor((itemPrice * 0.5) * 100), // 50% in cents
         destination: seller.stripeAccountId,
@@ -47,7 +49,7 @@ const transfer_map = []
     });
   }
 
-  // Apply promo code to totalAmount
+  // Apply promo code
   let finalAmount = totalAmount;
   let discountAmount = 0;
 
@@ -61,9 +63,8 @@ const transfer_map = []
     }
   }
 
-  // Create order with final amount
-  const order = await Order.create({
-    user: userId,
+  // Prepare order data
+  const orderData = {
     items: orderItems,
     totalAmount: finalAmount,
     discountAmount,
@@ -72,9 +73,17 @@ const transfer_map = []
     transferGroup,
     transactionId: '',
     paymentStatus: 'pending',
-  });
+  };
 
-  // Create Stripe session with SINGLE line item for final total amount
+  if (userId) {
+    orderData.user = userId;
+  } else if (guestId) {
+    orderData.guest = guestId;
+  }
+
+  const order = await Order.create(orderData);
+
+  // Create Stripe checkout session
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [
@@ -84,7 +93,7 @@ const transfer_map = []
           product_data: {
             name: `Order #${order._id.toString()}`,
           },
-          unit_amount: Math.round(finalAmount * 100), // amount in cents, must be integer >= 0
+          unit_amount: Math.round(finalAmount * 100),
         },
         quantity: 1,
       },
