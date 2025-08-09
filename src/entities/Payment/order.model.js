@@ -10,6 +10,7 @@ const orderItemSchema = new Schema(
     seller: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      required: true
     },
     quantity: {
       type: Number,
@@ -29,12 +30,18 @@ const orderItemSchema = new Schema(
   { _id: false }
 );
 
+
+
+
 const orderSchema = new Schema(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
+      ref: 'User'
+    },
+    guest: {
+      type:Schema.Types.ObjectId,
+      ref:'Guest'
     },
     items: [orderItemSchema],
     totalAmount: {

@@ -24,12 +24,14 @@ import legalDocumentRoutes from '../../entities/admin/custom/LegalDocument/legal
 import privacyRoutes from '../../entities/admin/custom/privacy/privacy.routes.js';
 import termRoutes from '../../entities/admin/custom/terms/terms.routes.js';
 import subResourceType from '../../entities/subPracticeArea/subPracticeArea.routes.js';
+import guestRouter from '../../entities/auth.guest/auth.guest.routes.js';
 
 const router = express.Router();
 
 // Define all your routes here
 router.use('/v1/auth', authRoutes);
 router.use('/v1/user', userRoutes);
+router.use('/v1/guest',guestRouter);
 router.use('/v1/practice-area', practiceAreaRoutes);
 router.use('/v1/country-state', countryRoutes);
 router.use('/v1/resource', resourceRoutes);

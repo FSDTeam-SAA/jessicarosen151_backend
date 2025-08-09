@@ -6,7 +6,7 @@ import { mongoURI, port } from './src/core/config/config.js';
 mongoose
   .connect(mongoURI)
   .then(() => {
-    logger.info('MongoDB connected');
+    logger.info('MongoDB connected...');
     server.listen(port, () => {
       logger.info(`Server running on port ${port}`);
     });
