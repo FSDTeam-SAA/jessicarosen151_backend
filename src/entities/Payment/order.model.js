@@ -10,7 +10,6 @@ const orderItemSchema = new Schema(
     seller: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: true
     },
     quantity: {
       type: Number,
