@@ -42,9 +42,7 @@ export const initiateCheckout = async (req, res) => {
     return generateResponse(res, 400, false, 'No items provided', null);
   }
 
-  if (!userId && !guestId) {
-    return generateResponse(res, 401, false, 'User or guest ID required', null);
-  }
+
 
   try {
     const session = await createCheckoutSession({
