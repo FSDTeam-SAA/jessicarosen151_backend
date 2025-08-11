@@ -44,7 +44,7 @@ router.use('/v1/message', messageRoutes);
 router.use('/v1/reviews', reviewRoutes);
 router.use('/v1/seller',applicationRoutes)
 router.use('/v1/stripe',sellerOnboardingRoutes);
-router.use('/v1/payment',paymentRoutes)
+router.use('/v1/payment',paymentRoutes);
 
 router.use('/v1/seller/dashboard', dashboardRoutes);
 router.use('/v1/admin/dashboard', adminDashboardRoutes);

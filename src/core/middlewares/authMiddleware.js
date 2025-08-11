@@ -39,6 +39,23 @@ export const verifyToken = async (req, res, next) => {
 };
 
 
+
+ const optionalVerifyToken =async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) return next();
+
+  try {
+    const decoded = jwt.verify(token, accessTokenSecrete);
+    const user = await User.findById(decoded._id).select('-password -createdAt -updatedAt -__v');
+    req.user = user;
+  } catch (err) {
+    console.warn('Invalid token, proceeding as guest');
+  }
+  next();
+};
+
+
+
 const userMiddleware = (req, res, next) => {
   if (!req.user) {
     return generateResponse(res, 401, false, 'Unauthorized: User not found', null);
@@ -115,5 +132,9 @@ const userAdminMiddleware = (req, res, next) => {
   next();
 };
 
-export{ userMiddleware, adminMiddleware, sellerMiddleware, adminSellerMiddleware, userAdminSellerMiddleware, userAdminMiddleware };
+
+
+
+
+export{ userMiddleware, adminMiddleware, sellerMiddleware, adminSellerMiddleware, userAdminSellerMiddleware, userAdminMiddleware,optionalVerifyToken };
 

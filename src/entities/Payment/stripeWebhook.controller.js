@@ -3,6 +3,7 @@ import Order from '../Payment/order.model.js';
 import User from '../auth/auth.model.js';
 import { generateResponse } from '../../lib/responseFormate.js';
 import Resource from '../resource/resource.model.js';
+import sendEmail from '../../lib/sendEmail.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -23,10 +24,9 @@ export const stripeWebhookHandler = async (req, res) => {
 
   try {
     switch (event.type) {
-      //Payment completed
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const order = await Order.findOne({ stripeSessionId: session.id });
+        const order = await Order.findOne({ stripeSessionId: session.id }).populate('items.resource');
 
         if (!order) break;
 
@@ -41,7 +41,6 @@ export const stripeWebhookHandler = async (req, res) => {
         await order.save();
 
         // Send 50% payout to each seller
-
         for (const item of order.items) {
           const seller = await User.findById(item.seller);
           if (seller?.role === 'SELLER' && seller.stripeAccountId) {
@@ -56,9 +55,36 @@ export const stripeWebhookHandler = async (req, res) => {
               console.log(`Transfer succeeded for seller ${seller._id} amount: ${transferAmount}`);
             } catch (error) {
               console.error(`Transfer failed for seller ${seller._id}:`, error);
-              // Optional: store transfer failure info in DB or notify admin here
             }
           }
+        }
+
+        // 📩 Send order confirmation email to user
+        try {
+          const user = await User.findById(order.user); // Assuming `order.user` stores the buyer's ID
+          if (user && user.email) {
+            const productList = order.items.map(item => {
+              return `<li>${item.resource.name} - Qty: ${item.quantity} - $${item.price}</li>`;
+            }).join("");
+
+            await sendEmail({
+              to: user.email,
+              subject: "Order Confirmation - Thank You for Your Purchase!",
+              html: `
+          <h2>Hi ${user.name || 'Customer'},</h2>
+          <p>Thank you for your order! Here are your purchased items:</p>
+          <ul>${productList}</ul>
+          <p>Total Paid: <strong>$${order.items.reduce((total, item) => total + (item.price * item.quantity), 0)}</strong></p>
+          <p>We’ll notify you once your items are shipped.</p>
+          <br/>
+          <p>Best regards,<br/>Your Company Team</p>
+        `
+            });
+
+            console.log(`Order confirmation email sent to ${user.email}`);
+          }
+        } catch (emailErr) {
+          console.error("Failed to send order confirmation email:", emailErr);
         }
 
         break;
@@ -70,7 +96,7 @@ export const stripeWebhookHandler = async (req, res) => {
       case 'charge.refunded': {
         const charge = event.data.object;
         const paymentIntentId = charge.payment_intent;
-        const order = await Order.findOneAndUpdate(
+        await Order.findOneAndUpdate(
           { transactionId: paymentIntentId },
           { paymentStatus: 'refunded' },
           { new: true }
@@ -81,7 +107,7 @@ export const stripeWebhookHandler = async (req, res) => {
       //  Manual payment canceled (by user or system)
       case 'payment_intent.canceled': {
         const intent = event.data.object;
-        const order = await Order.findOneAndUpdate(
+        await Order.findOneAndUpdate(
           { transactionId: intent.id },
           { paymentStatus: 'cancelled' },
           { new: true }
@@ -92,7 +118,7 @@ export const stripeWebhookHandler = async (req, res) => {
       //  Checkout session expired (no payment completed)
       case 'checkout.session.expired': {
         const session = event.data.object;
-        const order = await Order.findOneAndUpdate(
+        await Order.findOneAndUpdate(
           { stripeSessionId: session.id },
           { paymentStatus: 'expired' },
           { new: true }
