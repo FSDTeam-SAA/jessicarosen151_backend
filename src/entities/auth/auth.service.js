@@ -73,6 +73,23 @@ export const verifyRegisterOTPService = async (email, otp) => {
 
   await user.save();
 
+  await sendEmail({
+    to: email,
+    subject: '🎉 Welcome to Lawbie!',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px; background-color: #f9f9f9;">
+        <h1 style="color: #007BFF; text-align: center;">Welcome to Lawbie!</h1>
+        <p style="font-size: 16px; color: #555;">Hi ${user.name || 'there'},</p>
+        <p style="font-size: 16px; color: #555;">We’re thrilled to have you on board! Your account has been successfully verified, and you can now enjoy all the features we offer.</p>
+        <p style="font-size: 16px; color: #555;">If you ever need help, our support team is here for you.</p>
+        <p style="font-size: 16px; color: #555;">Let’s get started!</p>
+        <footer style="border-top: 1px solid #ddd; padding-top: 10px; margin-top: 20px; text-align: center; font-size: 12px; color: #aaa;">
+          &copy; 2025 Lawbie.com All rights reserved.
+        </footer>
+      </div>
+    `
+  });
+
   const { _id, role, profileImage, name, phoneNumber } = user;
   return { _id, email, role, profileImage, name, phoneNumber };
 };
