@@ -73,22 +73,62 @@ export const verifyRegisterOTPService = async (email, otp) => {
 
   await user.save();
 
-  await sendEmail({
-    to: email,
-    subject: '🎉 Welcome to Lawbie!',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px; background-color: #f9f9f9;">
-        <h1 style="color: #007BFF; text-align: center;">Welcome to Lawbie!</h1>
-        <p style="font-size: 16px; color: #555;">Hi ${user.name || 'there'},</p>
-        <p style="font-size: 16px; color: #555;">We’re thrilled to have you on board! Your account has been successfully verified, and you can now enjoy all the features we offer.</p>
-        <p style="font-size: 16px; color: #555;">If you ever need help, our support team is here for you.</p>
-        <p style="font-size: 16px; color: #555;">Let’s get started!</p>
-        <footer style="border-top: 1px solid #ddd; padding-top: 10px; margin-top: 20px; text-align: center; font-size: 12px; color: #aaa;">
-          &copy; 2025 Lawbie.com All rights reserved.
-        </footer>
+await sendEmail({
+  to: email,
+  subject: 'Welcome to Lawbie ⚖️',
+  html: `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f7fa; padding: 40px;">
+      <div style="max-width: 650px; margin: auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+
+        <!-- Header -->
+        <div style="background-color: #1a237e; padding: 20px; text-align: center;">
+          <h1 style="margin: 0; font-size: 26px; color: #ffffff;">Welcome to Lawbie ⚖️</h1>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 30px;">
+          <p style="font-size: 18px; color: #2c3e50; margin-bottom: 15px;">
+            Welcome to <strong>Lawbie</strong> — we’re excited to have you on board!
+          </p>
+          <p style="font-size: 16px; color: #555; line-height: 1.6;">
+            Your account is ready, and you now have access to tools and resources designed to help legal professionals 
+            <strong>save time</strong>, <strong>work smarter</strong>, and <strong>connect with the right people</strong>.
+            You can also upload your own work, share your expertise, and earn money while helping others in the legal community.
+          </p>
+          <p style="font-size: 16px; color: #555; line-height: 1.6;">
+            If you ever need help, our team is just an email away at 
+            <a href="mailto:support@lawbie.com" style="color: #1a237e; text-decoration: none; font-weight: bold;">support@lawbie.com</a>.
+          </p>
+          <p style="font-size: 16px; color: #555; line-height: 1.6;">
+            Here’s to making your legal work easier, faster, and more rewarding.
+          </p>
+
+          <!-- Call-to-Action Button -->
+          <div style="text-align: center; margin-top: 25px;">
+            <a href="https://www.lawbie.com" 
+               style="display: inline-block; background-color: #1a237e; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 8px; font-size: 16px; font-weight: bold;">
+              Visit Lawbie
+            </a>
+          </div>
+
+          <!-- Signature -->
+          <div style="margin-top: 35px;">
+            <p style="font-size: 16px; color: #333; margin: 0;">Best regards,</p>
+            <p style="font-size: 16px; color: #333; margin: 0;">The Lawbie Team</p>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f0f0f0; padding: 15px; text-align: center; font-size: 13px; color: #888;">
+          &copy; 2025 Lawbie.com — All rights reserved. <br>
+          <a href="https://www.lawbie.com" style="color: #1a237e; text-decoration: none;">www.lawbie.com</a>
+        </div>
+
       </div>
-    `
-  });
+    </div>
+  `
+});
+
 
   const { _id, role, profileImage, name, phoneNumber } = user;
   return { _id, email, role, profileImage, name, phoneNumber };
