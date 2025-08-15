@@ -41,7 +41,7 @@ export const initiateRegisterUserService = async ({ firstName, lastName, phoneNu
 
   await sendEmail({
     to: email,
-    subject: 'Your OTP Code',
+    subject: 'Your Lawbie OTP Code',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px; background-color: #f9f9f9;">
         <h1 style="color: #333; text-align: center;">Verification Code</h1>
@@ -214,7 +214,7 @@ export const forgetPasswordService = async (email) => {
 
   await sendEmail({
     to: email,
-    subject: 'Password Reset OTP',
+    subject: 'Your Lawbie OTP Code',
     html: verificationCodeTemplate(otp)
   });
 
