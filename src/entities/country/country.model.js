@@ -1,20 +1,47 @@
 import mongoose, { Schema } from "mongoose";
 
+const divisionSchema = new Schema(
+  {
+    divisionName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  { _id: false } 
+  
+);
+
+const stateSchema = new Schema(
+  {
+    stateName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    divisions: {
+      type: [divisionSchema],
+      default: [],
+    },
+  },
+  { _id: false }
+);
+
 const countrySchema = new Schema(
   {
     countryName: {
       type: String,
       required: true,
       unique: true,
-      trim: true
+      trim: true,
     },
     states: {
-      type: [String],
-      default: []
-    }
+      type: [stateSchema],
+      default: [],
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 

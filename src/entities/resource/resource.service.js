@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import Review from "../review/review.model.js";
 import Resource from "./resource.model.js";
 import Order from "../Payment/order.model.js";
+import User from "../auth/auth.model.js";
 
 
 export const createResourceService = async (data) => {
@@ -25,39 +26,19 @@ export const getAllResourcesService = async (
   search,
   country,
   states,
+  divisions,
   formatArray,
   sortedBy
 ) => {
   const query = sellerId ? { createdBy: sellerId } : {};
 
-  
-    // console.log(
-
-    //   "page:", page,
-    //   "limit:", limit,
-    //   "skip:", skip,
-    //   "status:", status,
-    //   "sellerId:", sellerId,
-    //   "resourceType:", resourceType,
-    //   "priceRange:", price,
-    //   "practiceAreasArray:", practiceAreas,
-    //   "subPracticeAreasArray:", subPracticeAreas,
-    //   "fileType:", fileType,
-    //   "search:", search,
-    //   "country:", country,
-    //   "statesArray:", states,
-    //   "formatArray:", formatArray,
-    //   "sortedBy:", sortedBy
-    // );
-  
 
   if (status) query.status = new RegExp(`^${status}$`, "i");
   if (fileType) query["file.type"] = new RegExp(`^${fileType}$`, "i");
   if (price) query.discountPrice = { $gte: parseInt(price[0]), $lte: parseInt(price[1]) };
   if (country) query.country = new RegExp(`^${country}$`, "i");
   if (states) query.states = { $in: states.map(s => new RegExp(`^${s}$`, "i")) };
-
-  console.log("query", query, "country", country, "states", states);
+  if (divisions) query.divisions = { $in: divisions.map(d => new RegExp(`^${d}$`, "i")) };
 
   if (practiceAreas) {
     query.practiceAreas = Array.isArray(practiceAreas)
@@ -81,9 +62,6 @@ export const getAllResourcesService = async (
       ? { $in: formatArray.map(f => new RegExp(`^${f}$`, "i")) }
       : new RegExp(`^${formatArray}$`, "i");
   }
-
-
-  console.log("query", query);
 
   const baseResources = await Resource.find(query)
     .select("-__v -updatedAt")
@@ -237,6 +215,73 @@ export const getAllResourcesService = async (
 };
 
 
+export const getSellerProfileResourcesService = async (
+  sellerId,
+  page,
+  limit,
+  skip,
+  status,
+  resourceTypeArray,
+  priceRange,
+  practiceAreasArray,
+  subPracticeAreasArray,
+  fileType,
+  search,
+  country,
+  statesArray,
+  divisionsArray,
+  formatArray,
+  sortedBy
+) => {
+
+
+  console.log("country", country,"sellerId", sellerId);
+
+  try {
+    const match = {
+      createdBy: sellerId,
+      ...(status && { status }),
+      ...(resourceTypeArray?.length > 0 && { resourceType: { $in: resourceTypeArray } }),
+      ...(priceRange && { price: { $gte: priceRange[0], $lte: priceRange[1] } }),
+      ...(practiceAreasArray?.length > 0 && { practiceAreas: { $in: practiceAreasArray } }),
+      ...(subPracticeAreasArray?.length > 0 && { subPracticeAreas: { $in: subPracticeAreasArray } }),
+      ...(fileType && { "file.type": fileType }),
+      ...(search && { $text: { $search: search } }),
+      ...(country && { country }),
+      ...(statesArray?.length > 0 && { states: { $in: statesArray } }),
+      ...(divisionsArray?.length > 0 && { divisions: { $in: divisionsArray } }),
+      ...(formatArray?.length > 0 && { format: { $in: formatArray } }),
+    };
+
+    console.log("match", match)
+
+    // Fetch resources
+    const resources = await Resource.find(match)
+      .skip(skip)
+      .limit(limit)
+      .sort(sortedBy ? { [sortedBy]: 1 } : { createdAt: -1 })
+      .lean();
+
+    const totalItems = await Resource.countDocuments(match);
+
+    // Fetch seller profile
+    const sellerProfile = await User.findById(sellerId).select("firstName lastName phoneNumber email profileImage gender bio isVerified address createdAt");
+
+
+    return {
+      sellerProfile, 
+      data: resources, 
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalItems / limit),
+        totalItems,
+        itemsPerPage: limit,
+      },
+    };
+  } catch (error) {
+    throw new Error("Error fetching seller resources: " + error.message);
+  }
+};
 
 export const getResourceByIdService = async (id, page, limit, skip) => {
   const resource = await Resource.findById(id)

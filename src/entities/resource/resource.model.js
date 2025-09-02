@@ -15,6 +15,9 @@ const resourceSchema = new Schema(
       type: String,
       default: ""
     }],
+    divisions: [{
+      type: String
+    }],
     resourceType: {
       type: [String],
       default: []
