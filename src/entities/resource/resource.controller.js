@@ -6,7 +6,8 @@ import {
   deleteResourceService,
   getSellerResourcesService,
   getMostPopularResources,
-  getTopSellingResources
+  getTopSellingResources,
+  getSellerProfileResourcesService
 } from "./resource.service.js";
 import { generateResponse } from "../../lib/responseFormate.js";
 import { cloudinaryUpload } from "../../lib/cloudinaryUpload.js";
@@ -23,7 +24,8 @@ export const createResource = async (req, res) => {
       quantity, 
       format,
       country, 
-      states, 
+      states,
+      divisions,
       resourceType, 
       practiceAreas,
       subPracticeAreas,
@@ -84,9 +86,10 @@ export const createResource = async (req, res) => {
       images,
       country,
       states: states || [],
+      divisions: divisions || [],
       resourceType: resourceType || [],
       createdBy,
-      status:productStatus,
+      status: productStatus,
       practiceAreas: practiceAreas || [],
       subPracticeAreas: subPracticeAreas || [],
       
@@ -113,6 +116,7 @@ export const getAllResources = async (req, res, next) => {
     search,
     country,
     states,
+    divisions,
     format,
     sortedBy,
     subPracticeAreas
@@ -125,10 +129,7 @@ export const getAllResources = async (req, res, next) => {
     const subPracticeAreasArray = subPracticeAreas ? subPracticeAreas.split(',') : null;
     const resourceTypeArray = resourceType ? resourceType.split(',') : null;
     const formatArray = format ? format.split(',') : null;
-
-    
-
-
+    const divisionsArray = divisions ? divisions.split(',') : null;
 
     const { data, pagination } = await getAllResourcesService(
       page,
@@ -144,6 +145,7 @@ export const getAllResources = async (req, res, next) => {
       search?.toLowerCase(),
       country,
       statesArray,
+      divisionsArray,
       formatArray,
       sortedBy,
       
@@ -159,6 +161,73 @@ export const getAllResources = async (req, res, next) => {
     next(error);
   }
 };
+
+
+export const sellerProfileResources = async (req, res, next) => {
+  const sellerId = req.params.sellerId;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const {
+    status,
+    resourceType,
+    price,
+    practiceAreas,
+    fileType,
+    search,
+    country,
+    states,
+    divisions,
+    format,
+    sortedBy,
+    subPracticeAreas
+  } = req.query;
+
+  try {
+    // Parse query parameters
+    const priceRange = price ? price.split(',').map(Number) : null;
+    const statesArray = states ? states.split(',') : null;
+    const practiceAreasArray = practiceAreas ? practiceAreas.split(',') : null;
+    const subPracticeAreasArray = subPracticeAreas ? subPracticeAreas.split(',') : null;
+    const resourceTypeArray = resourceType ? resourceType.split(',') : null;
+    const formatArray = format ? format.split(',') : null;
+    const divisionsArray = divisions ? divisions.split(',') : null;
+
+    // Call service
+const { sellerProfile, data, pagination } = await getSellerProfileResourcesService(
+  sellerId,
+  page,
+  limit,
+  skip,
+  status,
+  resourceTypeArray,
+  priceRange,
+  practiceAreasArray,
+  subPracticeAreasArray,
+  fileType,
+  search?.toLowerCase(),
+  country,
+  statesArray,
+  divisionsArray,
+  formatArray,
+  sortedBy
+);
+
+
+    return res.status(200).json({
+      success: true,
+      message: "Fetched seller's resources successfully",
+      data,
+      sellerProfile,
+      pagination,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 
 
 export const getResourceById = async (req, res, next) => {
@@ -199,6 +268,7 @@ export const updateResource = async (req, res) => {
       format,
       country,
       states,
+      divisions,
       resourceType,
       practiceAreas,
       subPracticeAreas,
@@ -223,6 +293,7 @@ export const updateResource = async (req, res) => {
     if (practiceAreas !== undefined) updatedFields.practiceAreas = practiceAreas;
     if (subPracticeAreas !== undefined) updatedFields.subPracticeAreas = subPracticeAreas;
     if (status !== undefined) updatedFields.status = status;
+    if (divisions !== undefined) updatedFields.divisions = divisions;
 
     if (thumbnailFile) {
       const result = await cloudinaryUpload(
