@@ -11,6 +11,7 @@ import {
      getSellerProfilesWithSalesStats,
      getSellerProfileWithStatsById,
      happyCustomersController,
+     followSellerController,
     } from "./user.controller.js";
 import { adminMiddleware,  verifyToken } from "../../core/middlewares/authMiddleware.js";
 import express from "express";
@@ -35,6 +36,10 @@ router.get('/all-sellerProfiles/:id', verifyToken, adminMiddleware, getSellerPro
 router.get("/all-users", verifyToken, adminMiddleware , getAllUsersController);
 router.get("/all-admins", verifyToken, adminMiddleware,  getAllAdminsController);
 router.get("/all-sellers", verifyToken, adminMiddleware, getAllSelleresController);
+
+
+router.post("/follow/:sellerId", verifyToken, followSellerController);
+
 
 // user
 router.get("/:id", verifyToken, getUserByIdController);

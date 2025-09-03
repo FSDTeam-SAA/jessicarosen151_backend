@@ -87,6 +87,33 @@ export const deleteUser = async (userId) => {
 };
 
 
+
+
+
+export const followSeller = async (userId, sellerId) => {
+  if (userId === sellerId) {
+    throw new Error("You cannot follow yourself");
+  }
+
+  const seller = await User.findById(sellerId);
+  if (!seller) {
+    throw new Error("Seller not found");
+  }
+
+  if (seller.role !== "SELLER") {
+    throw new Error("Only sellers can be followed");
+  }
+
+  // increment followers
+  seller.followers += 1;
+  await seller.save();
+
+  return seller;
+};
+
+
+
+
 // Upload avatar
 export const createAvatarProfile = async (id, files) => {
 
