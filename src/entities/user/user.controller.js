@@ -24,6 +24,7 @@ import {
   getSellerProfilesWithSalesStatsService,
   getSellerProfileWithStatsServiceId,
   getHappyCustomersService,
+  followSeller,
 
 } from "./user.service.js";
 
@@ -92,6 +93,23 @@ export const deleteUserController = async (req, res) => {
     generateResponse(res, 500, false, 'Failed to delete user', null);
   }
 };
+
+
+
+
+export const followSellerController = async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    const userId = req.user.id; // from verifyToken middleware
+
+    const seller = await followSeller(userId, sellerId);
+
+    generateResponse(res, 200, true, "Successfully followed seller", seller);
+  } catch (error) {
+    generateResponse(res, 500, false, error.message, null);
+  }
+};
+
 
 
 export const createAvatarController = async (req, res) => {
