@@ -233,10 +233,6 @@ export const getSellerProfileResourcesService = async (
   formatArray,
   sortedBy
 ) => {
-
-
-  console.log("country", country,"sellerId", sellerId);
-
   try {
     const match = {
       createdBy: sellerId,
@@ -253,8 +249,6 @@ export const getSellerProfileResourcesService = async (
       ...(formatArray?.length > 0 && { format: { $in: formatArray } }),
     };
 
-    console.log("match", match)
-
     // Fetch resources
     const resources = await Resource.find(match)
       .skip(skip)
@@ -264,13 +258,36 @@ export const getSellerProfileResourcesService = async (
 
     const totalItems = await Resource.countDocuments(match);
 
-    // Fetch seller profile
-    const sellerProfile = await User.findById(sellerId).select("firstName lastName phoneNumber email profileImage gender bio isVerified address createdAt");
+    // Fetch seller profile with followers
+    const sellerProfile = await User.findById(sellerId).select(
+      "firstName lastName phoneNumber email profileImage gender bio isVerified address createdAt followers"
+    );
 
+    // --- Get resourceIds for this seller ---
+    const resourceIds = await Resource.find({ createdBy: sellerId }).distinct("_id");
+
+    // --- Aggregate reviews for these resources ---
+    const reviewStats = await Review.aggregate([
+      { $match: { resourceId: { $in: resourceIds } } },
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: "$rating" },
+          ratingCount: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const avgRating = reviewStats.length > 0 ? reviewStats[0].avgRating : 0;
+    const ratingCount = reviewStats.length > 0 ? reviewStats[0].ratingCount : 0;
 
     return {
-      sellerProfile, 
-      data: resources, 
+      sellerProfile: {
+        ...sellerProfile.toObject(),
+        avgRating: avgRating.toFixed(1), 
+        ratingCount,
+      },
+      data: resources,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(totalItems / limit),
@@ -282,6 +299,7 @@ export const getSellerProfileResourcesService = async (
     throw new Error("Error fetching seller resources: " + error.message);
   }
 };
+
 
 export const getResourceByIdService = async (id, page, limit, skip) => {
   const resource = await Resource.findById(id)
