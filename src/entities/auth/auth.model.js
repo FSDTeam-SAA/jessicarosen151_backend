@@ -62,6 +62,11 @@ const UserSchema = new mongoose.Schema(
       default: ''
     },
 
+    followers: {
+      type: Number,
+      default: 0
+    },
+
     hasActiveSubscription: { type: Boolean, default: false },
     subscriptionExpireDate: { type: Date, default: null },
   },
