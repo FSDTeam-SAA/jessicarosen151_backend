@@ -260,7 +260,7 @@ export const getSellerProfileResourcesService = async (
 
     // Fetch seller profile with followers
     const sellerProfile = await User.findById(sellerId).select(
-      "firstName lastName phoneNumber email profileImage gender bio isVerified address createdAt followers"
+      "firstName lastName phoneNumber email profileImage gender bio isVerified address createdAt followers about"
     );
 
     // --- Get resourceIds for this seller ---
