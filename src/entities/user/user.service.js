@@ -640,9 +640,7 @@ export const getSellerProfileWithStatsServiceId = async (sellerId) => {
 };
 
 
-
 export const getHappyCustomersService = async () => {
- 
   const topBuyers = await Order.aggregate([
     { $match: { paymentStatus: "paid" } },
     { $unwind: "$items" },
@@ -656,15 +654,20 @@ export const getHappyCustomersService = async () => {
     { $limit: 4 }
   ]);
 
-
-  const userIds = topBuyers.map(user => user._id);
+  // collect only non-null IDs
+  const userIds = topBuyers.map(user => user._id).filter(Boolean);
 
   const users = await User.find({ _id: { $in: userIds } })
     .select("profileImage")
     .lean();
 
-  const userMap = new Map(users.map(user => [user._id.toString(), user]));
-  const sortedUsers = topBuyers.map(u => userMap.get(u._id.toString())).filter(Boolean);
+  const userMap = new Map(
+    users.filter(u => u?._id).map(user => [user._id.toString(), user])
+  );
+
+  const sortedUsers = topBuyers
+    .map(u => userMap.get(u._id?.toString()))
+    .filter(Boolean);
 
   return sortedUsers;
 };
