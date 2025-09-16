@@ -26,10 +26,6 @@ const resourceSchema = new Schema(
       type: String,
       default: ""
     },
-    price: {
-      type: Number,
-      required: true
-    },
     discountPrice: {
       type: Number,
       default: 0

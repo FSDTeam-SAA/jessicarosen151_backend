@@ -19,7 +19,6 @@ export const createResource = async (req, res) => {
     const { 
       title, 
       description, 
-      price, 
       discountPrice, 
       quantity, 
       format,
@@ -74,7 +73,6 @@ export const createResource = async (req, res) => {
     const resource = await createResourceService({
       title,
       description,
-      price,
       discountPrice,
       quantity,
       format,
@@ -262,7 +260,6 @@ export const updateResource = async (req, res) => {
     const {
       title,
       description,
-      price,
       discountPrice,
       quantity,
       format,
@@ -283,7 +280,6 @@ export const updateResource = async (req, res) => {
 
     if (title !== undefined) updatedFields.title = title;
     if (description !== undefined) updatedFields.description = description;
-    if (price !== undefined) updatedFields.price = price;
     if (discountPrice !== undefined) updatedFields.discountPrice = discountPrice;
     if (quantity !== undefined) updatedFields.quantity = quantity;
     if (format !== undefined) updatedFields.format = format;
