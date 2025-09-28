@@ -25,6 +25,7 @@ import privacyRoutes from '../../entities/admin/custom/privacy/privacy.routes.js
 import termRoutes from '../../entities/admin/custom/terms/terms.routes.js';
 import subResourceType from '../../entities/subPracticeArea/subPracticeArea.routes.js';
 import guestRouter from '../../entities/auth.guest/auth.guest.routes.js';
+import customContactRoutes  from '../../entities/contact/customContact/customContactRoutes.js';
 
 const router = express.Router();
 
@@ -54,7 +55,7 @@ router.use('/v1/admin/custom/bestseller', bestsellerRoutes);
 router.use('/v1/admin/custom/legal-document', legalDocumentRoutes);
 router.use('/v1/admin/custom/privacy', privacyRoutes);
 router.use('/v1/admin/custom/terms', termRoutes);
-
+router.use('/v1/admin/custom/contact',customContactRoutes);
 
 
 router.use('/v1/newsletter', newsletterRoutes);
