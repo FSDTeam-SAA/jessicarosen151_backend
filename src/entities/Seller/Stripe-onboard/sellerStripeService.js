@@ -5,10 +5,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 
-export async function createConnectedAccount(email) {
+export async function createConnectedAccount(email, country) {
   const account = await stripe.accounts.create({
     type: 'express',
-    country: 'US',
+    country, 
     email,
     capabilities: {
       card_payments: { requested: true },
@@ -17,6 +17,7 @@ export async function createConnectedAccount(email) {
   });
   return account.id;
 }
+
 
 export async function createOnboardingLink(accountId, refreshUrl, returnUrl) {
   const link = await stripe.accountLinks.create({
