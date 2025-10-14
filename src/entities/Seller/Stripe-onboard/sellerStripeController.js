@@ -4,10 +4,13 @@ import User from '../../auth/auth.model.js';
 import { createConnectedAccount, createOnboardingLink } from '../Stripe-onboard/sellerStripeService.js';
 
  
-
 export const onboardSeller = async (req, res) => {
   try {
-    const email = req.body.email;
+    const { email, country } = req.body;
+
+    if (!country) {
+      return generateResponse(res, 400, false, 'Country is required');
+    }
 
     const seller = await User.findOne({ email, role: RoleType.SELLER });
     if (!seller) {
@@ -15,7 +18,7 @@ export const onboardSeller = async (req, res) => {
     }
 
     if (!seller.stripeAccountId) {
-      seller.stripeAccountId = await createConnectedAccount(email);
+      seller.stripeAccountId = await createConnectedAccount(email, country);
       await seller.save();
     }
 
