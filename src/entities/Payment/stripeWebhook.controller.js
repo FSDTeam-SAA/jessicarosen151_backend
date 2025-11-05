@@ -27,7 +27,7 @@ export const stripeWebhookHandler = async (req, res) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
-        const order = await Order.findOne({ stripeSessionId: session.id }).populate('items.resource');
+        const order = await Order.findOne({ stripeSessionId: session.id }).populate('items.resource').populate('user');
 
         if (!order) break;
 
@@ -67,7 +67,7 @@ export const stripeWebhookHandler = async (req, res) => {
         }
 
 
-        console.log("Getting user order",order);
+        console.log("Getting user order",order.user);
 
         try {
   const user = await User.findById(order.user);
