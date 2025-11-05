@@ -5,6 +5,7 @@ import { generateResponse } from '../../lib/responseFormate.js';
 import Resource from '../resource/resource.model.js';
 import sendEmail from '../../lib/sendEmail.js';
 
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const stripeWebhookHandler = async (req, res) => {
@@ -41,121 +42,88 @@ export const stripeWebhookHandler = async (req, res) => {
         await order.save();
 
         // Fetch the PaymentIntent to create a transfer
-  const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
-  
-  // Create transfer(s) for each seller
-const transferPromises = order.items.map(async (item) => {
-  const seller = await User.findById(item.seller);
-  
-  if (seller && seller.stripeAccountId) {
-    const amountToTransfer = Math.floor(item.price * item.quantity * 0.37 * 100); // 37% for seller in cents
+        const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
 
-    try {
-      await stripe.transfers.create({
-        amount: amountToTransfer,
-        currency: 'usd',
-        destination: seller.stripeAccountId, // The connected account ID
-        transfer_group: session.metadata.transferGroup, // Link the transfer to the payment
-      });
-
-      console.log(`✅ Transfer successful for seller ${seller.email}`);
-    } catch (transferErr) {
-      console.error(`❌ Transfer failed for seller ${seller.email}:`, transferErr);
-    }
-  }
-});
-
-  
-  
-
-
-        // Wait for all transfers to complete
-        await Promise.all(transferPromises);
-  
-        // Email sending using Promise.all for parallel execution
-        const emailPromises = [];
-
-        // ✅ Send purchase confirmation email to buyer
-        emailPromises.push(
-          (async () => {
-            try {
-              const user = await User.findById(order.user);
-              if (user && user.email) {
-                await sendEmail({
-                  to: user.email,
-                  subject: "Your Lawbie Purchase Confirmation 🧾",
-                  html: `
-                  <p>Hi ${user.name || 'Customer'},</p>
-
-                  <p>Thank you for your purchase on Lawbie! 🎉</p>
-
-                  <p>Your transaction has been successfully processed, and your document(s) are now available for download.</p>
-
-                  <p><strong>Access your files anytime here:</strong><br/>
-                  <a href="https://www.lawbie.com/dashboard/downloads" style="color:#1a73e8;">My Downloads</a></p>
-
-                  <p>You can return to your downloads at any time by logging into your Lawbie account and visiting the My Downloads page.</p>
-
-                  <p>If you have any questions or need assistance, feel free to reach out to us at <a href="mailto:support@lawbie.com">support@lawbie.com</a> — we’re happy to help!</p>
-
-                  <p>Thank you for supporting legal creators and joining the Lawbie community.</p>
-
-                  <p>Best,<br/>
-                  The Lawbie Team<br/>
-                  <a href="https://www.lawbie.com">www.lawbie.com</a></p>
-                  `
-                });
-
-                console.log(`✅ Purchase confirmation email sent to buyer: ${user.email}`);
-              }
-            } catch (emailErr) {
-              console.error("❌ Failed to send buyer confirmation email:", emailErr);
-            }
-          })()
-        );
-
-        // ✅ Send sale notification email to seller(s)
+        // Create transfer(s) for each seller
         for (const item of order.items) {
-          emailPromises.push(
-            (async () => {
-              try {
-                const seller = await User.findById(item.seller);
-                if (seller && seller.email) {
-                  const productTitle = item.resource?.name || 'Your Product';
-                  const sellerEarnings = (item.price * item.quantity * 0.37).toFixed(2);
+          const seller = await User.findById(item.seller);
 
-                  await sendEmail({
-                    to: seller.email,
-                    subject: "You've Made a Sale on Lawbie! 💼📚",
-                    html: `
-                    <p>Hi ${seller.name || 'Seller'},</p>
+          if (seller && seller.stripeAccountId) {
+            const amountToTransfer = Math.floor(item.price * item.quantity * 0.37 * 100); // 37% for seller in cents
 
-                    <p>Great news — your product, <strong>${productTitle}</strong>, has just been purchased on Lawbie! 🎉</p>
+            try {
+              await stripe.transfers.create({
+                amount: amountToTransfer,
+                currency: 'usd',
+                destination: seller.stripeAccountId, // The connected account ID
+                transfer_group: session.metadata.transferGroup, // Link the transfer to the payment
+              });
 
-                    <p>You’ve earned <strong>$${sellerEarnings}</strong> from this sale. Funds will be processed automatically through Stripe.</p>
-
-                    <p>You can view all your sales and earnings anytime by visiting your Seller Dashboard:<br/>
-                    👉 <a href="https://www.lawbie.com/dashboard/seller" style="color:#1a73e8;">Go To Dashboard</a></p>
-
-                    <p>Thank you for contributing your expertise to the Lawbie community — your work helps lawyers everywhere save time and practice smarter.</p>
-
-                    <p>Best,<br/>
-                    The Lawbie Team<br/>
-                    <a href="https://www.lawbie.com">www.lawbie.com</a></p>
-                    `
-                  });
-
-                  console.log(`✅ Sale notification email sent to seller: ${seller.email}`);
-                }
-              } catch (sellerEmailErr) {
-                console.error("❌ Failed to send seller email:", sellerEmailErr);
-              }
-            })()
-          );
+              console.log(`✅ Transfer successful for seller ${seller.email}`);
+            } catch (transferErr) {
+              console.error(`❌ Transfer failed for seller ${seller.email}:`, transferErr);
+            }
+          }
         }
 
-        // Wait for all email sending tasks to complete
-        await Promise.all(emailPromises);
+        try {
+  const user = await User.findById(order.user);
+  if (user && user.email) {
+    await sendEmail({
+      to: user.email,
+      subject: "Your Lawbie Purchase Confirmation 🧾",
+      html: `
+        <p>Hi ${user.name || 'Customer'},</p>
+        <p>Thank you for your purchase on Lawbie! 🎉</p>
+        <p>Your transaction has been successfully processed, and your document(s) are now available for download.</p>
+        <p><strong>Access your files anytime here:</strong><br/>
+        <a href="https://www.lawbie.com/dashboard/downloads" style="color:#1a73e8;">My Downloads</a></p>
+        <p>You can return to your downloads at any time by logging into your Lawbie account and visiting the My Downloads page.</p>
+        <p>If you have any questions or need assistance, feel free to reach out to us at <a href="mailto:support@lawbie.com">support@lawbie.com</a> — we’re happy to help!</p>
+        <p>Thank you for supporting legal creators and joining the Lawbie community.</p>
+        <p>Best,<br/>
+        The Lawbie Team<br/>
+        <a href="https://www.lawbie.com">www.lawbie.com</a></p>
+      `
+    });
+
+    console.log(`✅ Purchase confirmation email sent to buyer: ${user.email}`);
+  }
+} catch (emailErr) {
+  console.error("❌ Failed to send buyer confirmation email:", emailErr);
+}
+
+try {
+  for (const item of order.items) {
+    const seller = await User.findById(item.seller);
+    if (seller && seller.email) {
+      const productTitle = item.resource?.name || 'Your Product';
+      const sellerEarnings = (item.price * item.quantity * 0.37).toFixed(2);
+
+      await sendEmail({
+        to: seller.email,
+        subject: "You've Made a Sale on Lawbie! 💼📚",
+        html: `
+          <p>Hi ${seller.name || 'Seller'},</p>
+          <p>Great news — your product, <strong>${productTitle}</strong>, has just been purchased on Lawbie! 🎉</p>
+          <p>You’ve earned <strong>$${sellerEarnings}</strong> from this sale. Funds will be processed automatically through Stripe.</p>
+          <p>You can view all your sales and earnings anytime by visiting your Seller Dashboard:<br/>
+          👉 <a href="https://www.lawbie.com/dashboard/seller" style="color:#1a73e8;">Go To Dashboard</a></p>
+          <p>Thank you for contributing your expertise to the Lawbie community — your work helps lawyers everywhere save time and practice smarter.</p>
+          <p>Best,<br/>
+          The Lawbie Team<br/>
+          <a href="https://www.lawbie.com">www.lawbie.com</a></p>
+        `
+      });
+
+      console.log(`✅ Sale notification email sent to seller: ${seller.email}`);
+    }
+  }
+} catch (sellerEmailErr) {
+  console.error("❌ Failed to send seller email:", sellerEmailErr);
+}
+
+
 
         break;
       }
@@ -170,19 +138,9 @@ const transferPromises = order.items.map(async (item) => {
         );
         break;
 
-        break;
+
       }
 
-      case 'charge.refunded': {
-        const charge = event.data.object;
-        const paymentIntentId = charge.payment_intent;
-        await Order.findOneAndUpdate(
-          { transactionId: paymentIntentId },
-          { paymentStatus: 'refunded' },
-          { new: true }
-        );
-        break;
-      }
 
       case 'payment_intent.canceled': {
         const intent = event.data.object;
