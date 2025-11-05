@@ -1,3 +1,4 @@
+import { createLogger } from 'winston';
 import { generateResponse } from '../../../lib/responseFormate.js';
 import RoleType from '../../../lib/types.js';
 import User from '../../auth/auth.model.js';
@@ -11,8 +12,9 @@ export const onboardSeller = async (req, res) => {
     if (!country) {
       return generateResponse(res, 400, false, 'Country is required');
     }
-
+console.log('sda',email,RoleType.SELLER)
     const seller = await User.findOne({ email, role: RoleType.SELLER });
+    
     if (!seller) {
       return generateResponse(res, 404, false, 'Seller not found or not authorized');
     }
