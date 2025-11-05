@@ -40,6 +40,34 @@ export const stripeWebhookHandler = async (req, res) => {
         order.transactionId = session.payment_intent;
         await order.save();
 
+        // Fetch the PaymentIntent to create a transfer
+  const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
+  
+  // Create transfer(s) for each seller
+  for (const item of order.items) {
+    const seller = await User.findById(item.seller);
+    
+    if (seller && seller.stripeAccountId) {
+      const amountToTransfer = Math.floor(item.price * item.quantity * 0.37 * 100); // 37% for seller in cents
+
+      try {
+        await stripe.transfers.create({
+          amount: amountToTransfer,
+          currency: 'usd',
+          destination: seller.stripeAccountId, // The connected account ID
+          transfer_group: session.metadata.transferGroup, // Link the transfer to the payment
+        });
+
+        console.log(`✅ Transfer successful for seller ${seller.email}`);
+      } catch (transferErr) {
+        console.error(`❌ Transfer failed for seller ${seller.email}:`, transferErr);
+      }
+    }
+  }
+  
+  
+
+
         // ✅ Send purchase confirmation email to buyer
         try {
           const user = await User.findById(order.user);
