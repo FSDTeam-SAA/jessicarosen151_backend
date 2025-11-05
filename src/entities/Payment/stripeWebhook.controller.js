@@ -67,7 +67,7 @@ export const stripeWebhookHandler = async (req, res) => {
         }
 
 
-        console.log("Getting user order",order.user);
+        console.log("Getting user order",order);
 
         try {
   const user = await User.findById(order.user);
