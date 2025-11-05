@@ -44,26 +44,27 @@ export const stripeWebhookHandler = async (req, res) => {
   const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent);
   
   // Create transfer(s) for each seller
-  for (const item of order.items) {
-    const seller = await User.findById(item.seller);
-    
-    if (seller && seller.stripeAccountId) {
-      const amountToTransfer = Math.floor(item.price * item.quantity * 0.37 * 100); // 37% for seller in cents
+const transferPromises = order.items.map(async (item) => {
+  const seller = await User.findById(item.seller);
+  
+  if (seller && seller.stripeAccountId) {
+    const amountToTransfer = Math.floor(item.price * item.quantity * 0.37 * 100); // 37% for seller in cents
 
-      try {
-        await stripe.transfers.create({
-          amount: amountToTransfer,
-          currency: 'usd',
-          destination: seller.stripeAccountId, // The connected account ID
-          transfer_group: session.metadata.transferGroup, // Link the transfer to the payment
-        });
+    try {
+      await stripe.transfers.create({
+        amount: amountToTransfer,
+        currency: 'usd',
+        destination: seller.stripeAccountId, // The connected account ID
+        transfer_group: session.metadata.transferGroup, // Link the transfer to the payment
+      });
 
-        console.log(`✅ Transfer successful for seller ${seller.email}`);
-      } catch (transferErr) {
-        console.error(`❌ Transfer failed for seller ${seller.email}:`, transferErr);
-      }
+      console.log(`✅ Transfer successful for seller ${seller.email}`);
+    } catch (transferErr) {
+      console.error(`❌ Transfer failed for seller ${seller.email}:`, transferErr);
     }
   }
+});
+
   
   
 
