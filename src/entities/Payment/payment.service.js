@@ -36,7 +36,7 @@ export const createCheckoutSession = async (
 
     if (seller?.role === 'SELLER' && seller.stripeAccountId) {
       transfer_map.push({
-        amount: Math.floor((itemPrice * 0.5) * 100), // 50% in cents
+        amount: Math.floor((itemPrice * 0.37) * 100), // 37% for the seller in cents
         destination: seller.stripeAccountId,
       });
     }
@@ -49,13 +49,17 @@ export const createCheckoutSession = async (
     });
   }
 
-  // Apply promo code
-  let finalAmount = totalAmount;
+  // Apply 13% extra charge to the total amount
+  const additionalCharge = totalAmount * 0.13; // 13%
+  const totalWithCharge = totalAmount + additionalCharge; // New total with 13% added
+
+  // Apply promo code if provided
+  let finalAmount = totalWithCharge;
   let discountAmount = 0;
 
   if (promoCode) {
     try {
-      const promoResult = await applyPromoCodeService(promoCode, totalAmount);
+      const promoResult = await applyPromoCodeService(promoCode, totalWithCharge);
       finalAmount = promoResult.finalPrice;
       discountAmount = promoResult.discountAmount;
     } catch (err) {

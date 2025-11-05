@@ -40,59 +40,80 @@ export const stripeWebhookHandler = async (req, res) => {
         order.transactionId = session.payment_intent;
         await order.save();
 
-        // Send 50% payout to each seller
-        for (const item of order.items) {
-          const seller = await User.findById(item.seller);
-          if (seller?.role === 'SELLER' && seller.stripeAccountId) {
-            const transferAmount = Math.floor(item.price * item.quantity * 0.5 * 100);
-            try {
-              await stripe.transfers.create({
-                amount: transferAmount,
-                currency: 'usd',
-                destination: seller.stripeAccountId,
-                transfer_group: session.metadata.transferGroup,
-              });
-              console.log(`Transfer succeeded for seller ${seller._id} amount: ${transferAmount}`);
-            } catch (error) {
-              console.error(`Transfer failed for seller ${seller._id}:`, error);
-            }
-          }
-        }
-
-        // 📩 Send order confirmation email to user
+        // ✅ Send purchase confirmation email to buyer
         try {
-          const user = await User.findById(order.user); // Assuming `order.user` stores the buyer's ID
+          const user = await User.findById(order.user);
           if (user && user.email) {
-            const productList = order.items.map(item => {
-              return `<li>${item.resource.name} - Qty: ${item.quantity} - $${item.price}</li>`;
-            }).join("");
-
             await sendEmail({
               to: user.email,
-              subject: "Order Confirmation - Thank You for Your Purchase!",
+              subject: "Your Lawbie Purchase Confirmation 🧾",
               html: `
-          <h2>Hi ${user.name || 'Customer'},</h2>
-          <p>Thank you for your order! Here are your purchased items:</p>
-          <ul>${productList}</ul>
-          <p>Total Paid: <strong>$${order.items.reduce((total, item) => total + (item.price * item.quantity), 0)}</strong></p>
-          <p>We’ll notify you once your items are shipped.</p>
-          <br/>
-          <p>Best regards,<br/>Your Company Team</p>
-        `
+              <p>Hi ${user.name || 'Customer'},</p>
+
+              <p>Thank you for your purchase on Lawbie! 🎉</p>
+
+              <p>Your transaction has been successfully processed, and your document(s) are now available for download.</p>
+
+              <p><strong>Access your files anytime here:</strong><br/>
+              <a href="https://www.lawbie.com/dashboard/downloads" style="color:#1a73e8;">My Downloads</a></p>
+
+              <p>You can return to your downloads at any time by logging into your Lawbie account and visiting the My Downloads page.</p>
+
+              <p>If you have any questions or need assistance, feel free to reach out to us at <a href="mailto:support@lawbie.com">support@lawbie.com</a> — we’re happy to help!</p>
+
+              <p>Thank you for supporting legal creators and joining the Lawbie community.</p>
+
+              <p>Best,<br/>
+              The Lawbie Team<br/>
+              <a href="https://www.lawbie.com">www.lawbie.com</a></p>
+              `
             });
 
-            console.log(`Order confirmation email sent to ${user.email}`);
+            console.log(`✅ Purchase confirmation email sent to buyer: ${user.email}`);
           }
         } catch (emailErr) {
-          console.error("Failed to send order confirmation email:", emailErr);
+          console.error("❌ Failed to send buyer confirmation email:", emailErr);
+        }
+
+        // ✅ Send sale notification email to seller(s)
+        try {
+          for (const item of order.items) {
+            const seller = await User.findById(item.seller);
+            if (seller && seller.email) {
+              const productTitle = item.resource?.name || 'Your Product';
+              const sellerEarnings = (item.price * item.quantity * 0.37).toFixed(2);
+
+              await sendEmail({
+                to: seller.email,
+                subject: "You've Made a Sale on Lawbie! 💼📚",
+                html: `
+                <p>Hi ${seller.name || 'Seller'},</p>
+
+                <p>Great news — your product, <strong>${productTitle}</strong>, has just been purchased on Lawbie! 🎉</p>
+
+                <p>You’ve earned <strong>$${sellerEarnings}</strong> from this sale. Funds will be processed automatically through Stripe.</p>
+
+                <p>You can view all your sales and earnings anytime by visiting your Seller Dashboard:<br/>
+                👉 <a href="https://www.lawbie.com/dashboard/seller" style="color:#1a73e8;">Go To Dashboard</a></p>
+
+                <p>Thank you for contributing your expertise to the Lawbie community — your work helps lawyers everywhere save time and practice smarter.</p>
+
+                <p>Best,<br/>
+                The Lawbie Team<br/>
+                <a href="https://www.lawbie.com">www.lawbie.com</a></p>
+                `
+              });
+
+              console.log(`✅ Sale notification email sent to seller: ${seller.email}`);
+            }
+          }
+        } catch (sellerEmailErr) {
+          console.error("❌ Failed to send seller email:", sellerEmailErr);
         }
 
         break;
       }
 
-
-
-      // Refund successful
       case 'charge.refunded': {
         const charge = event.data.object;
         const paymentIntentId = charge.payment_intent;
@@ -104,7 +125,6 @@ export const stripeWebhookHandler = async (req, res) => {
         break;
       }
 
-      //  Manual payment canceled (by user or system)
       case 'payment_intent.canceled': {
         const intent = event.data.object;
         await Order.findOneAndUpdate(
@@ -115,7 +135,6 @@ export const stripeWebhookHandler = async (req, res) => {
         break;
       }
 
-      //  Checkout session expired (no payment completed)
       case 'checkout.session.expired': {
         const session = event.data.object;
         await Order.findOneAndUpdate(
@@ -126,18 +145,15 @@ export const stripeWebhookHandler = async (req, res) => {
         break;
       }
 
-      // Transfer to seller created successfully
       case 'transfer.created': {
         const transfer = event.data.object;
         console.log(`Transfer to seller successful: ${transfer.id}`);
         break;
       }
 
-      // Transfer failed
       case 'transfer.failed': {
         const transfer = event.data.object;
         console.error(`❌ Transfer to seller failed: ${transfer.id}`);
-        // Optional: log or alert admins here
         break;
       }
 
