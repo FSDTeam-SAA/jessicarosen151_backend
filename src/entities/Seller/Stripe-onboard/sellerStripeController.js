@@ -12,7 +12,6 @@ export const onboardSeller = async (req, res) => {
     if (!country) {
       return generateResponse(res, 400, false, 'Country is required');
     }
-console.log('sda',email,RoleType.SELLER)
     const seller = await User.findOne({ email, role: RoleType.SELLER });
     
     if (!seller) {

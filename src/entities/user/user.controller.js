@@ -119,8 +119,6 @@ export const createAvatarController = async (req, res) => {
     if (!req.files?.profileImage) {
       return generateResponse(res, 400, false, 'Profile image is required');
     }
-    // console.log(id)
-
     const user = await createAvatarProfile(id, req.files);
     generateResponse(res, 200, true, 'Avatar uploaded successfully', user);
   } catch (error) {

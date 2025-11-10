@@ -35,9 +35,6 @@ export const createHeroSectionController = async (req, res) => {
 
     const filePath = req.files?.image?.[0]?.path;
     const formData = req.body;
-
-    console.log("Received form data:", filePath, formData);
-
     const newSection = await createHeroSection(formData, filePath);
     generateResponse(res, 201, true, "Hero section created", newSection);
   } catch (error) {

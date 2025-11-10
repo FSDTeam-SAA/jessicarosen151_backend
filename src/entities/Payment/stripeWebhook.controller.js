@@ -10,6 +10,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export const stripeWebhookHandler = async (req, res) => {
   const sig = req.headers['stripe-signature'];
+
+
+  console.log("sig", sig)
+
   let event;
 
   try {
