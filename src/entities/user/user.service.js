@@ -198,7 +198,6 @@ export const deleteAvatarProfile = async (id) => {
     
     // Delete from Cloudinary
     const cloudinaryResult = await cloudinary.uploader.destroy(publicId);
-    console.log('Cloudinary deletion result:', cloudinaryResult);
     
     // Verify deletion was successful
     if (cloudinaryResult.result !== 'ok') {

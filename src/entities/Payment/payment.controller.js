@@ -4,7 +4,6 @@
 // export const initiateCheckout = async (req, res) => {
 //   const userId = req.user?.id;
 //    const items = req.body.items;
-//   console.log(userId);
 //   try {
 //     const session = await createCheckoutSession(userId,{  itemsFromFrontend: items,promoCode: req.body.promoCode});
     
@@ -37,6 +36,8 @@ export const initiateCheckout = async (req, res) => {
   }
 
   const items = req.body.items;
+
+  console.log(items)
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return generateResponse(res, 400, false, 'No items provided', null);

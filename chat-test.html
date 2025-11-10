@@ -34,30 +34,8 @@
       const msg = document.createElement("p");
       msg.innerText = `${data.sender}: ${data.message.message}`;
       chatBox.appendChild(msg);
-    console.log("Message received via WebSocket:", data);
     });
 
-    // function sendMessage() {
-    //   const msgText = document.getElementById("messageInput").value;
-
-    //   // simulate POST API to /api/messages with fetch()
-    //   fetch("http://localhost:5002/api/v1/messages", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-Type": "application/json",
-    //       // include your token here if using JWT
-    //     },
-    //     body: JSON.stringify({
-    //       bookingId: bookingId,
-    //       message: msgText
-    //     })
-    //   })
-    //   .then(res => res.json())
-    //   .then(data => {
-    //     console.log("Message sent via REST:", data);
-    //   })
-    //   .catch(err => console.error("Error:", err));
-    // }
   </script>
 </body>
 </html>
