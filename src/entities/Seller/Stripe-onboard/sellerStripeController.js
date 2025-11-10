@@ -1,4 +1,3 @@
-import { createLogger } from 'winston';
 import { generateResponse } from '../../../lib/responseFormate.js';
 import RoleType from '../../../lib/types.js';
 import User from '../../auth/auth.model.js';
