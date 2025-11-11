@@ -207,66 +207,70 @@ const formatMonth = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSta
 
 
 
-export const getSellerSalesHistoryService = async (sellerId, search, page = 1, limit = 10) => {
-  const matchStage = {
-    $match: {
-      "items.seller": sellerId,
-      paymentStatus: "paid"
-    }
-  };
-
-  const searchMatch = search
-    ? {
-        $match: {
-          "resource.productId": { $regex: search, $options: "i" }
-        }
-      }
-    : null;
-
-  const basePipeline = [
-    { $unwind: "$items" },
-    matchStage,
-    {
-      $group: {
-        _id: "$items.resource",
-        quantity: { $sum: "$items.quantity" },
-        amount: {
-          $sum: {
-            $divide: [
-              { $multiply: ["$items.price", "$items.quantity"] },
-              2
-            ]
-          }
-        }
-      }
-    },
-    {
-      $lookup: {
-        from: "resources",
-        localField: "_id",
-        foreignField: "_id",
-        as: "resource"
-      }
-    },
-    { $unwind: "$resource" }
-  ];
-
-  if (searchMatch) basePipeline.push(searchMatch);
-
-  const countPipeline = [...basePipeline, { $count: "total" }];
-  const countResult = await Order.aggregate(countPipeline);
-  const totalItems = countResult[0]?.total || 0;
-
+export const getSellerSalesHistoryService = async (
+  sellerId,
+  search = '',
+  page = 1,
+  limit = 10
+) => {
   const skip = (page - 1) * limit;
 
-  const finalPipeline = [
-    ...basePipeline,
+  // Base match: paid orders with at least one item from this seller
+  const basePipeline = [
+    {
+      $match: {
+        paymentStatus: 'paid',
+        'items.seller': sellerId
+      }
+    },
+    { $unwind: '$items' },
+    {
+      $match: {
+        'items.seller': sellerId
+      }
+    },
+    // Optional search on productId
+    {
+      $lookup: {
+        from: 'resources',
+        localField: 'items.resource',
+        foreignField: '_id',
+        as: 'items.resourceDoc'
+      }
+    },
+    { $unwind: '$items.resourceDoc' },
+    ...(search
+      ? [{
+          $match: {
+            'items.resourceDoc.productId': { $regex: search, $options: 'i' }
+          }
+        }]
+      : []
+    ),
+    // Project final structure
     {
       $project: {
-        productId: "$resource.productId",
-        quantity: 1,
-        amount: 1,
-        _id: 0
+        orderId: '$_id',
+        createdAt: '$createdAt',
+        totalAmount: '$totalAmount',
+        paymentStatus: '$paymentStatus',
+        orderStatus: '$orderStatus',
+        item: {
+          quantity: '$items.quantity',
+          price: '$items.price',
+          sellerAmount: {
+            $divide: [
+              { $multiply: ['$items.price', '$items.quantity'] },
+              2
+            ]
+          },
+          product: {
+            productId: '$items.resourceDoc.productId',
+            title: '$items.resourceDoc.title',
+            image: { $arrayElemAt: ['$items.resourceDoc.images', 0] }, // adjust field
+            // add more fields like slug, category, etc.
+          }
+        }
       }
     },
     { $sort: { createdAt: -1 } },
@@ -274,18 +278,52 @@ export const getSellerSalesHistoryService = async (sellerId, search, page = 1, l
     { $limit: limit }
   ];
 
-  const data = await Order.aggregate(finalPipeline);
+  // Count pipeline (same filters, no skip/limit)
+  const countPipeline = [
+    {
+      $match: {
+        paymentStatus: 'paid',
+        'items.seller': sellerId
+      }
+    },
+    { $unwind: '$items' },
+    { $match: { 'items.seller': sellerId } },
+    {
+      $lookup: {
+        from: 'resources',
+        localField: 'items.resource',
+        foreignField: '_id',
+        as: 'items.resourceDoc'
+      }
+    },
+    { $unwind: '$items.resourceDoc' },
+    ...(search
+      ? [{
+          $match: {
+            'items.resourceDoc.productId': { $regex: search, $options: 'i' }
+          }
+        }]
+      : []
+    ),
+    { $count: 'total' }
+  ];
+
+  const [data, countResult] = await Promise.all([
+    Order.aggregate(basePipeline),
+    Order.aggregate(countPipeline)
+  ]);
+
+  const totalItems = countResult[0]?.total || 0;
 
   return {
+    success: true,
+    message: 'Seller sales history fetched',
     data,
     pagination: {
-      currentPage: page,
+      currentPage: Number(page),
       totalPages: Math.ceil(totalItems / limit),
       totalItems,
-      itemsPerPage: limit
+      itemsPerPage: Number(limit)
     }
   };
 };
-
-
-
