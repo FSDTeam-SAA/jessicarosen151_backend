@@ -6,64 +6,211 @@ import { generateResponse } from '../../lib/responseFormate.js';
 import sendEmail from '../../lib/sendEmail.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2023-06-20',
 });
 
 export const stripeWebhookHandler = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 
-  console.log("sig", sig);
+  console.log("🔔 Webhook received");
 
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    console.log(`✅ Webhook verified: ${event.type}`);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    console.error('❌ Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-
-  console.log("Evenetasdfasdfasdfasdfasd", event.data.object);
-
+  // Log the event for debugging
+  console.log(`📦 Event type: ${event.type}`);
+  console.log('Event ID:', event.id);
+  console.log('Event object:', JSON.stringify(event.data.object, null, 2));
 
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
-        const session = event.data.object;
-        const orderId = session.metadata.orderId;
-        if (!orderId) break;
+        console.log("✅ Checkout session completed - processing payment");
+        await handleSuccessfulPayment(event.data.object);
+        break;
+      }
 
-        const order = await Order.findById(orderId)
-          .populate('items.resource')
-          .populate('user')
-          .populate('items.seller');
-        if (!order || order.paymentStatus === 'paid') break;
-
-        const taxCents = session.total_details?.amount_tax || 0;
-        const totalPaidCents = session.amount_total;
-
-        // Update order
-        order.paymentStatus = 'paid';
-        order.transactionId = session.payment_intent;
-        order.totalAmount = totalPaidCents / 100;
-        order.taxAmount = taxCents / 100;
-        await order.save();
-
-        // Reduce stock
-        for (const item of order.items) {
-          await Resource.findByIdAndUpdate(
-            item.resource._id,
-            { $inc: { quantity: -item.quantity } }
+      case 'payment_intent.succeeded': {
+        console.log("✅ Payment intent succeeded");
+        const paymentIntent = event.data.object;
+        
+        // Try to get session from payment intent
+        if (paymentIntent.invoice) {
+          const session = await stripe.checkout.sessions.retrieve(
+            paymentIntent.invoice,
+            { expand: ['line_items'] }
           );
+          if (session) {
+            await handleSuccessfulPayment(session);
+          }
+        } else if (paymentIntent.metadata?.orderId) {
+          await handleSuccessfulPaymentFromPaymentIntent(paymentIntent);
         }
+        break;
+      }
 
-        // NO MANUAL TRANSFER — Stripe already paid seller
-        const sellerShareCents = Object.values(order.sellerShares || {})[0] || 0;
-        console.log(`Order ${order._id} | Seller received $${(sellerShareCents / 100).toFixed(2)} via transfer_data`);
+      case 'checkout.session.async_payment_succeeded': {
+        console.log("✅ Async payment succeeded");
+        await handleSuccessfulPayment(event.data.object);
+        break;
+      }
 
-        // ——— SEND BUYER EMAIL ———
-        const buyer = order.user || { email: session.customer_email, firstName: 'Customer', lastName: '' };
-        const buyerEmailHTML = `
+      case 'application_fee.created': {
+        console.log("ℹ️ Application fee created - payment processing");
+        // This is expected but doesn't mean payment is complete
+        break;
+      }
+
+      case 'charge.succeeded': {
+        console.log("✅ Charge succeeded");
+        const charge = event.data.object;
+        if (charge.invoice) {
+          const session = await stripe.checkout.sessions.retrieve(charge.invoice);
+          if (session) {
+            await handleSuccessfulPayment(session);
+          }
+        }
+        break;
+      }
+
+      case 'checkout.session.expired':
+      case 'payment_intent.payment_failed':
+      case 'charge.failed': {
+        console.log(`❌ Payment failed: ${event.type}`);
+        await handleFailedPayment(event.data.object);
+        break;
+      }
+
+      default:
+        console.log(`⚡ Unhandled event type: ${event.type}`);
+    }
+
+    generateResponse(res, 200, true, 'Webhook processed successfully');
+  } catch (err) {
+    console.error('💥 Webhook processing error:', err);
+    generateResponse(res, 500, false, 'Server error processing webhook', err.message);
+  }
+};
+
+// Main function for handling successful payments
+async function handleSuccessfulPayment(session) {
+  console.log("💰 Processing successful payment for session:", session.id);
+  
+  const orderId = session.metadata?.orderId;
+  if (!orderId) {
+    console.error('❌ No orderId in session metadata');
+    return;
+  }
+
+  console.log('📋 Looking for order:', orderId);
+
+  const order = await Order.findById(orderId)
+    .populate('items.resource')
+    .populate('user')
+    .populate('items.seller');
+    
+  if (!order) {
+    console.error('❌ Order not found:', orderId);
+    return;
+  }
+
+  if (order.paymentStatus === 'paid') {
+    console.log('✅ Order already paid:', orderId);
+    return;
+  }
+
+  console.log('🔄 Updating order status to paid');
+
+  const taxCents = session.total_details?.amount_tax || 0;
+  const totalPaidCents = session.amount_total;
+
+  // Update order
+  order.paymentStatus = 'paid';
+  order.transactionId = session.payment_intent;
+  order.totalAmount = totalPaidCents / 100;
+  order.taxAmount = taxCents / 100;
+  order.paidAt = new Date();
+  await order.save();
+
+  console.log(`✅ Order ${orderId} marked as paid - Amount: $${order.totalAmount}`);
+
+  // Reduce stock
+  console.log('📦 Reducing stock for ordered items');
+  for (const item of order.items) {
+    await Resource.findByIdAndUpdate(
+      item.resource._id,
+      { $inc: { quantity: -item.quantity } }
+    );
+    console.log(`➖ Reduced stock for resource: ${item.resource._id} by ${item.quantity}`);
+  }
+
+  // Send emails
+  console.log('📧 Sending confirmation emails');
+  await sendEmails(order, session);
+
+  console.log(`🎉 Order ${orderId} processing completed successfully`);
+}
+
+// Fallback handler for payment_intent.succeeded
+async function handleSuccessfulPaymentFromPaymentIntent(paymentIntent) {
+  const orderId = paymentIntent.metadata.orderId;
+  console.log("🔄 Processing payment intent success for order:", orderId);
+  
+  const order = await Order.findById(orderId)
+    .populate('items.resource')
+    .populate('user')
+    .populate('items.seller');
+    
+  if (!order || order.paymentStatus === 'paid') return;
+
+  order.paymentStatus = 'paid';
+  order.transactionId = paymentIntent.id;
+  order.totalAmount = paymentIntent.amount / 100;
+  order.paidAt = new Date();
+  await order.save();
+
+  console.log(`✅ Order ${orderId} marked as paid via payment intent`);
+
+  // Reduce stock
+  for (const item of order.items) {
+    await Resource.findByIdAndUpdate(
+      item.resource._id,
+      { $inc: { quantity: -item.quantity } }
+    );
+  }
+
+  await sendEmails(order, { customer_email: paymentIntent.receipt_email });
+}
+
+// Handle failed payments
+async function handleFailedPayment(failedObject) {
+  const orderId = failedObject.metadata?.orderId;
+  if (!orderId) return;
+
+  const order = await Order.findById(orderId);
+  if (order && order.paymentStatus === 'pending') {
+    order.paymentStatus = 'failed';
+    order.failureReason = failedObject.last_payment_error?.message || 'Payment failed';
+    await order.save();
+    console.log(`❌ Order ${orderId} marked as failed`);
+  }
+}
+
+// Email sending function
+async function sendEmails(order, session) {
+  try {
+    // ——— SEND BUYER EMAIL ———
+    const buyerEmail = order.user?.email || session.customer_email;
+    const buyerName = order.user?.firstName || 'Customer';
+    
+    if (buyerEmail) {
+      const buyerEmailHTML = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,7 +231,7 @@ export const stripeWebhookHandler = async (req, res) => {
           </tr>
           <tr>
             <td style="padding:40px 40px 30px;">
-              <h2 style="color:#1a1a1a; margin:0 0 20px; font-size:24px;">Hi ${buyer.firstName} ${buyer.lastName || ''},</h2>
+              <h2 style="color:#1a1a1a; margin:0 0 20px; font-size:24px;">Hi ${buyerName},</h2>
               <p style="color:#333333; font-size:16px; line-height:1.6; margin:0 0 24px;">
                 Thank you for your purchase on <strong>Lawbie</strong>!
               </p>
@@ -94,17 +241,17 @@ export const stripeWebhookHandler = async (req, res) => {
                   <strong>Subtotal:</strong> $${(order.rawSubtotalCents / 100).toFixed(2)} USD
                   ${order.discountAmount > 0 ? `<br/><strong>Discount:</strong> -$${order.discountAmount.toFixed(2)}` : ''}
                   <br/><strong>Pre-tax:</strong> $${(order.totalAmount - order.taxAmount).toFixed(2)}
-                  <br/><strong>Tax (13%):</strong> $${order.taxAmount.toFixed(2)}
+                  <br/><strong>Tax:</strong> $${order.taxAmount.toFixed(2)}
                   <br/><strong>Total Paid:</strong> $${order.totalAmount.toFixed(2)} USD
                 </p>
               </div>
               <div style="text-align:center; margin:35px 0;">
-                <a href="https://lawbie.com/account/orders" style="background-color:#1a73e8; color:#ffffff; padding:14px 32px; text-decoration:none; border-radius:50px; font-weight:600; font-size:16px; display:inline-block; box-shadow:0 4px 15px rgba(26,115,232,0.3);">
+                <a href="${process.env.FRONTEND_URL}/account/downloads" style="background-color:#1a73e8; color:#ffffff; padding:14px 32px; text-decoration:none; border-radius:50px; font-weight:600; font-size:16px; display:inline-block; box-shadow:0 4px 15px rgba(26,115,232,0.3);">
                   Download My Files
                 </a>
               </div>
               <p style="color:#555555; font-size:15px; line-height:1.6; margin:30px 0 0;">
-                Access your downloads from <strong>My Downloads</strong>.
+                Access your downloads from <strong>My Downloads</strong> in your account.
               </p>
               <hr style="border:none; border-top:1px solid #eeeeee; margin:35px 0;" />
               <p style="color:#777777; font-size:14px; line-height:1.6;">
@@ -128,17 +275,21 @@ export const stripeWebhookHandler = async (req, res) => {
 </body>
 </html>`;
 
-        try {
-          await sendEmail({ to: buyer.email, subject: 'Your Lawbie Purchase Confirmation', html: buyerEmailHTML });
-        } catch (err) {
-          console.error('Buyer email failed:', err.message);
-        }
+      await sendEmail({ 
+        to: buyerEmail, 
+        subject: 'Your Lawbie Purchase Confirmation', 
+        html: buyerEmailHTML 
+      });
+      console.log('✅ Buyer email sent to:', buyerEmail);
+    }
 
-        // ——— SEND SELLER EMAIL ———
-        const seller = order.items[0]?.seller;
-        if (seller?.email) {
-          const productTitles = order.items.map(i => i.resource?.title || 'Product').join(', ');
-          const sellerEmailHTML = `
+    // ——— SEND SELLER EMAIL ———
+    const seller = order.items[0]?.seller;
+    if (seller?.email) {
+      const productTitles = order.items.map(i => i.resource?.title || 'Product').join(', ');
+      const sellerShareCents = Object.values(order.sellerShares || {})[0] || 0;
+      
+      const sellerEmailHTML = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -160,7 +311,7 @@ export const stripeWebhookHandler = async (req, res) => {
             <td style="padding:40px;">
               <h2 style="color:#1a1a1a; margin:0 0 20px; font-size:24px;">Hi ${seller.name || 'Seller'},</h2>
               <p style="color:#333333; font-size:16px; line-height:1.6; margin:0 0 24px;">
-                Your product(s) have been purchased!
+                Your product(s) have been purchased on Lawbie!
               </p>
               <div style="background-color:#f0f8ff; border:1px solid #bee5eb; border-radius:10px; padding:20px; margin:30px 0;">
                 <p style="margin:0; color:#0c5460; font-size:16px;">
@@ -169,10 +320,10 @@ export const stripeWebhookHandler = async (req, res) => {
                 </p>
               </div>
               <p style="color:#444444; font-size:15px; line-height:1.6; margin:25px 0;">
-                Funds are in your Stripe account.
+                Funds have been transferred to your Stripe account and will be available according to your payout schedule.
               </p>
               <div style="text-align:center; margin:40px 0;">
-                <a href="https://lawbie.com/dashboard/seller" style="background-color:#28a745; color:#ffffff; padding:14px 36px; text-decoration:none; border-radius:50px; font-weight:600; font-size:16px; display:inline-block; box-shadow:0 4px 15px rgba(40,167,69,0.3);">
+                <a href="${process.env.FRONTEND_URL}/dashboard/seller" style="background-color:#28a745; color:#ffffff; padding:14px 36px; text-decoration:none; border-radius:50px; font-weight:600; font-size:16px; display:inline-block; box-shadow:0 4px 15px rgba(40,167,69,0.3);">
                   View Dashboard
                 </a>
               </div>
@@ -192,29 +343,29 @@ export const stripeWebhookHandler = async (req, res) => {
   </table>
 </body>
 </html>`;
-          try {
-            await sendEmail({ to: seller.email, subject: 'You Made a Sale!', html: sellerEmailHTML });
-          } catch (err) {
-            console.error('Seller email failed:', err.message);
-          }
-        }
 
-        break;
-      }
-
-      case 'charge.refunded':
-      case 'payment_intent.canceled':
-      case 'checkout.session.expired':
-        // Handle status updates
-        break;
-
-      default:
-        console.log(`Unhandled event: ${event.type}`);
+      await sendEmail({ 
+        to: seller.email, 
+        subject: 'You Made a Sale on Lawbie!', 
+        html: sellerEmailHTML 
+      });
+      console.log('✅ Seller email sent to:', seller.email);
     }
 
-    generateResponse(res, 200, true, 'Webhook processed');
   } catch (err) {
-    console.error('Webhook error:', err);
-    generateResponse(res, 500, false, 'Server error', err.message);
+    console.error('❌ Email sending failed:', err.message);
   }
+}
+
+// Debug endpoint to check webhook configuration
+export const webhookDebug = async (req, res) => {
+  console.log("🔍 Webhook debug endpoint hit");
+  console.log("Headers:", req.headers);
+  console.log("Body:", req.body);
+  
+  generateResponse(res, 200, true, 'Webhook debug endpoint working', {
+    timestamp: new Date().toISOString(),
+    headers: req.headers,
+    body: req.body
+  });
 };
