@@ -5,71 +5,64 @@ import Resource from '../resource/resource.model.js';
 import { generateResponse } from '../../lib/responseFormate.js';
 import sendEmail from '../../lib/sendEmail.js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2024-06-20',
+});
 
 export const stripeWebhookHandler = async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 
-  // === 1. Verify Webhook Signature ===
+  console.log("sig", sig);
+
   try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  try {
-    // === 2. Handle Webhook Events ===
-    switch (event.type) {
 
-      // ——————————————————————————————————————
-      // PAYMENT SUCCESS – MAIN EVENT
-      // ——————————————————————————————————————
+  console.log("Evenetasdfasdfasdfasdfasd", event.data.object);
+
+
+  try {
+    switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
         const orderId = session.metadata.orderId;
-
-        if (!orderId) {
-          console.warn('No orderId in session metadata');
-          break;
-        }
+        if (!orderId) break;
 
         const order = await Order.findById(orderId)
           .populate('items.resource')
           .populate('user')
           .populate('items.seller');
-
         if (!order || order.paymentStatus === 'paid') break;
+
+        const taxCents = session.total_details?.amount_tax || 0;
+        const totalPaidCents = session.amount_total;
 
         // Update order
         order.paymentStatus = 'paid';
         order.transactionId = session.payment_intent;
-        order.totalAmount = session.amount_total / 100;
-        order.taxAmount = (session.total_details?.amount_tax || 0) / 100;
-        order.discountAmount = (session.total_details?.amount_discount || 0) / 100;
+        order.totalAmount = totalPaidCents / 100;
+        order.taxAmount = taxCents / 100;
         await order.save();
 
         // Reduce stock
         for (const item of order.items) {
-          await Resource.findByIdAndUpdate(item.resource._id, {
-            $inc: { quantity: -item.quantity },
-          });
+          await Resource.findByIdAndUpdate(
+            item.resource._id,
+            { $inc: { quantity: -item.quantity } }
+          );
         }
 
-        console.log(`Order ${order._id} paid. Split: 50% seller, 50% Lawbie. Tax: $${order.taxAmount}`);
+        // NO MANUAL TRANSFER — Stripe already paid seller
+        const sellerShareCents = Object.values(order.sellerShares || {})[0] || 0;
+        console.log(`Order ${order._id} | Seller received $${(sellerShareCents / 100).toFixed(2)} via transfer_data`);
 
         // ——— SEND BUYER EMAIL ———
-        const buyer = order.user || {
-          email: session.customer_email,
-          firstName: 'Customer',
-          lastName: '',
-        };
-
+        const buyer = order.user || { email: session.customer_email, firstName: 'Customer', lastName: '' };
         const buyerEmailHTML = `
 <!DOCTYPE html>
 <html lang="en">
@@ -93,13 +86,16 @@ export const stripeWebhookHandler = async (req, res) => {
             <td style="padding:40px 40px 30px;">
               <h2 style="color:#1a1a1a; margin:0 0 20px; font-size:24px;">Hi ${buyer.firstName} ${buyer.lastName || ''},</h2>
               <p style="color:#333333; font-size:16px; line-height:1.6; margin:0 0 24px;">
-                Thank you for your purchase on <strong>Lawbie</strong>! Your payment has been successfully processed.
+                Thank you for your purchase on <strong>Lawbie</strong>!
               </p>
               <div style="background-color:#f8f9fa; border-left:5px solid #1a73e8; padding:20px; margin:30px 0; border-radius:0 8px 8px 0;">
                 <p style="margin:0; color:#2c3e50; font-size:15px;">
                   <strong>Order ID:</strong> #${order._id}<br/>
-                  <strong>Total Paid:</strong> $${(session.amount_total / 100).toFixed(2)} USD
-                  ${order.taxAmount > 0 ? `<br/><strong>Tax:</strong> $${order.taxAmount.toFixed(2)}` : ''}
+                  <strong>Subtotal:</strong> $${(order.rawSubtotalCents / 100).toFixed(2)} USD
+                  ${order.discountAmount > 0 ? `<br/><strong>Discount:</strong> -$${order.discountAmount.toFixed(2)}` : ''}
+                  <br/><strong>Pre-tax:</strong> $${(order.totalAmount - order.taxAmount).toFixed(2)}
+                  <br/><strong>Tax (13%):</strong> $${order.taxAmount.toFixed(2)}
+                  <br/><strong>Total Paid:</strong> $${order.totalAmount.toFixed(2)} USD
                 </p>
               </div>
               <div style="text-align:center; margin:35px 0;">
@@ -108,11 +104,11 @@ export const stripeWebhookHandler = async (req, res) => {
                 </a>
               </div>
               <p style="color:#555555; font-size:15px; line-height:1.6; margin:30px 0 0;">
-                You can access your downloads anytime from your <strong>My Downloads</strong> page.
+                Access your downloads from <strong>My Downloads</strong>.
               </p>
               <hr style="border:none; border-top:1px solid #eeeeee; margin:35px 0;" />
               <p style="color:#777777; font-size:14px; line-height:1.6;">
-                Questions? Email us at <a href="mailto:support@lawbie.com" style="color:#1a73e8; text-decoration:none;">support@lawbie.com</a>
+                Questions? Email <a href="mailto:support@lawbie.com" style="color:#1a73e8; text-decoration:none;">support@lawbie.com</a>
               </p>
             </td>
           </tr>
@@ -133,24 +129,15 @@ export const stripeWebhookHandler = async (req, res) => {
 </html>`;
 
         try {
-          await sendEmail({
-            to: buyer.email,
-            subject: 'Your Lawbie Purchase Confirmation',
-            html: buyerEmailHTML,
-          });
-          console.log(`Buyer email sent: ${buyer.email}`);
-        } catch (emailErr) {
-          console.error('Failed to send buyer email:', emailErr.message);
+          await sendEmail({ to: buyer.email, subject: 'Your Lawbie Purchase Confirmation', html: buyerEmailHTML });
+        } catch (err) {
+          console.error('Buyer email failed:', err.message);
         }
 
-        // ——— SEND SELLER EMAILS (one per item) ———
-        for (const item of order.items) {
-          const seller = item.seller;
-          if (!seller?.email) continue;
-
-          const earnings = (item.price * item.quantity * 0.5).toFixed(2);
-          const productTitle = item.resource?.name || 'Product';
-
+        // ——— SEND SELLER EMAIL ———
+        const seller = order.items[0]?.seller;
+        if (seller?.email) {
+          const productTitles = order.items.map(i => i.resource?.title || 'Product').join(', ');
           const sellerEmailHTML = `
 <!DOCTYPE html>
 <html lang="en">
@@ -166,7 +153,6 @@ export const stripeWebhookHandler = async (req, res) => {
         <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
           <tr>
             <td style="background: linear-gradient(135deg, #34c759, #28a745); padding:40px; text-align:center;">
-              <div style="font-size:50px; margin-bottom:10px;">Celebration</div>
               <h1 style="color:#ffffff; margin:0; font-size:28px; font-weight:700;">Sale Confirmed!</h1>
             </td>
           </tr>
@@ -174,19 +160,19 @@ export const stripeWebhookHandler = async (req, res) => {
             <td style="padding:40px;">
               <h2 style="color:#1a1a1a; margin:0 0 20px; font-size:24px;">Hi ${seller.name || 'Seller'},</h2>
               <p style="color:#333333; font-size:16px; line-height:1.6; margin:0 0 24px;">
-                Your product has been purchased on Lawbie!
+                Your product(s) have been purchased!
               </p>
               <div style="background-color:#f0f8ff; border:1px solid #bee5eb; border-radius:10px; padding:20px; margin:30px 0;">
                 <p style="margin:0; color:#0c5460; font-size:16px;">
-                  <strong>Product:</strong> ${productTitle}<br/>
-                  <strong>Earnings:</strong> <span style="font-size:20px; color:#28a745;">$${earnings}</span> (50% commission)
+                  <strong>Product(s):</strong> ${productTitles}<br/>
+                  <strong>Your Earnings:</strong> <span style="font-size:20px; color:#28a745;">$${(sellerShareCents / 100).toFixed(2)}</span> (50% of pre-tax)
                 </p>
               </div>
               <p style="color:#444444; font-size:15px; line-height:1.6; margin:25px 0;">
-                Funds are automatically sent to your Stripe account.
+                Funds are in your Stripe account.
               </p>
               <div style="text-align:center; margin:40px 0;">
-                <a href="https://www.lawbie.com/dashboard/seller" style="background-color:#28a745; color:#ffffff; padding:14px 36px; text-decoration:none; border-radius:50px; font-weight:600; font-size:16px; display:inline-block; box-shadow:0 4px 15px rgba(40,167,69,0.3);">
+                <a href="https://lawbie.com/dashboard/seller" style="background-color:#28a745; color:#ffffff; padding:14px 36px; text-decoration:none; border-radius:50px; font-weight:600; font-size:16px; display:inline-block; box-shadow:0 4px 15px rgba(40,167,69,0.3);">
                   View Dashboard
                 </a>
               </div>
@@ -206,76 +192,29 @@ export const stripeWebhookHandler = async (req, res) => {
   </table>
 </body>
 </html>`;
-
           try {
-            await sendEmail({
-              to: seller.email,
-              subject: 'You Made a Sale on Lawbie! (50% Earnings)',
-              html: sellerEmailHTML,
-            });
-            console.log(`Seller email sent: ${seller.email}`);
-          } catch (emailErr) {
-            console.error(`Failed to send seller email (${seller.email}):`, emailErr.message);
+            await sendEmail({ to: seller.email, subject: 'You Made a Sale!', html: sellerEmailHTML });
+          } catch (err) {
+            console.error('Seller email failed:', err.message);
           }
         }
 
         break;
       }
 
-      // ——————————————————————————————————————
-      // REFUNDS & CANCELLATIONS
-      // ——————————————————————————————————————
-      case 'charge.refunded': {
-        const charge = event.data.object;
-        await Order.findOneAndUpdate(
-          { transactionId: charge.payment_intent },
-          { paymentStatus: 'refunded' },
-          { new: true }
-        );
-        console.log(`Order refunded: ${charge.payment_intent}`);
-        break;
-      }
-
-      case 'payment_intent.canceled': {
-        const intent = event.data.object;
-        await Order.findOneAndUpdate(
-          { transactionId: intent.id },
-          { paymentStatus: 'cancelled' },
-          { new: true }
-        );
-        break;
-      }
-
-      case 'checkout.session.expired': {
-        const session = event.data.object;
-        await Order.findOneAndUpdate(
-          { stripeSessionId: session.id },
-          { paymentStatus: 'expired' },
-          { new: true }
-        );
-        break;
-      }
-
-      // ——————————————————————————————————————
-      // LOGGING
-      // ——————————————————————————————————————
-      case 'transfer.created':
-        console.log(`Transfer created: ${event.data.object.id}`);
-        break;
-
-      case 'transfer.failed':
-        console.error(`Transfer failed: ${event.data.object.id}`, event.data.object);
+      case 'charge.refunded':
+      case 'payment_intent.canceled':
+      case 'checkout.session.expired':
+        // Handle status updates
         break;
 
       default:
         console.log(`Unhandled event: ${event.type}`);
     }
 
-    // === 3. Respond to Stripe ===
-    generateResponse(res, 200, true, 'Webhook processed successfully');
+    generateResponse(res, 200, true, 'Webhook processed');
   } catch (err) {
-    console.error('Webhook handler error:', err);
+    console.error('Webhook error:', err);
     generateResponse(res, 500, false, 'Server error', err.message);
   }
 };
-
