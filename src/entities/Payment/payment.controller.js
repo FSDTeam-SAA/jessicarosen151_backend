@@ -1,29 +1,14 @@
-// import { generateResponse } from '../../lib/responseFormate.js';
-// import { createCheckoutSession } from '../Payment/payment.service.js';
-// import {order} from './order.model.js'
-// export const initiateCheckout = async (req, res) => {
-//   const userId = req.user?.id;
-//    const items = req.body.items;
-//   try {
-//     const session = await createCheckoutSession(userId,{  itemsFromFrontend: items,promoCode: req.body.promoCode});
-    
-//     generateResponse(res, 200, true, 'Checkout session created successfully', {
-//       sessionId: session.sessionId,
-//       url: session.url,   
-//     });
-//   } catch (error) {
-//     generateResponse(res, 500, false, 'Failed to create checkout session', error.message);
-//   }
-// };
+// src/Payment/payment.controller.js
 import { generateResponse } from '../../lib/responseFormate.js';
 import Guest from '../auth.guest/auth.guest.model.js';
-import { createCheckoutSession } from '../Payment/payment.service.js';
+import { createCheckoutSession } from './payment.service.js';
+
 
 export const initiateCheckout = async (req, res) => {
   const userId = req.user?.id || null;
   let guestId = null;
 
-  // If no logged-in user, create guest record if guest info is provided
+  // Handle guest
   if (!userId && req.body.guest) {
     try {
       const guestDoc = await Guest.create(req.body.guest);
@@ -37,27 +22,44 @@ export const initiateCheckout = async (req, res) => {
 
   const items = req.body.items;
 
-  console.log(items)
-
   if (!items || !Array.isArray(items) || items.length === 0) {
-    return generateResponse(res, 400, false, 'No items provided', null);
+    return generateResponse(res, 400, false, 'No items provided');
   }
 
-
-
   try {
-    const session = await createCheckoutSession({
+    const result = await createCheckoutSession({
       userId,
       guestId,
       itemsFromFrontend: items,
       promoCode: req.body.promoCode,
+      customerCountry: req.body.customerCountry || 'CA',
+      customerEmail: req.body.customerEmail,
     });
 
-    generateResponse(res, 200, true, 'Checkout session created successfully', {
-      sessionId: session.sessionId,
-      url: session.url,
+    // ——— IMPORTANT FIX ———
+    // If multiple sellers → return all sessions
+    // If one seller → return just one
+    if (result.sessions.length === 1) {
+      return generateResponse(res, 200, true, 'Checkout session created successfully', {
+        sessionId: result.sessions[0].sessionId,
+        url: result.sessions[0].url,
+        orderId: result.sessions[0].orderId,
+      });
+    }
+
+    // Multi-seller cart
+    return generateResponse(res, 200, true, 'Checkout sessions created successfully', {
+      sessions: result.sessions.map(s => ({
+        sessionId: s.sessionId,
+        url: s.url,
+        orderId: s.orderId,
+        sellerStripeId: s.sellerStripeId,
+      })),
+      total: result.totalPreTax,
     });
+
   } catch (error) {
-    generateResponse(res, 500, false, 'Failed to create checkout session', error.message);
+    console.error('Checkout error:', error);
+    return generateResponse(res, 500, false, 'Failed to create checkout session', error.message);
   }
 };
