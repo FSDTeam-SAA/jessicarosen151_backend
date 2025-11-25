@@ -3,7 +3,6 @@ import { generateResponse } from '../../lib/responseFormate.js';
 import Guest from '../auth.guest/auth.guest.model.js';
 import { createCheckoutSession } from './payment.service.js';
 
-
 export const initiateCheckout = async (req, res) => {
   const userId = req.user?.id || null;
   let guestId = null;

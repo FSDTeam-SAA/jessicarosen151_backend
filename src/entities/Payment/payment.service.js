@@ -1,4 +1,4 @@
-// src/Payment/checkout.service.js
+// src/Payment/payment.service.js
 import Stripe from 'stripe';
 import User from '../auth/auth.model.js';
 import { applyPromoCodeService } from '../promoCode/promo.service.js';
@@ -114,8 +114,9 @@ export const createCheckoutSession = async ({
       isMultiSellerOrder: itemsBySeller.size > 1,
     });
 
-
-    console.log(group.lineItems, customerEmail, userId, sellerStripeId, order._id, customerCountry, lawbiePreTaxShareCents, sellerPreTaxCents, sellerShareCents);
+    console.log('Creating checkout session for order:', order._id);
+    console.log('Line items:', group.lineItems.length);
+    console.log('Seller Stripe ID:', sellerStripeId);
 
     // Create Checkout Session as Direct Charge
     const session = await stripe.checkout.sessions.create({
@@ -132,28 +133,41 @@ export const createCheckoutSession = async ({
         customerCountry,
         sellerStripeId,
         type: 'direct_charge',
+        userId: userId || '',
+        guestId: guestId || '',
       },
       // This is the CRITICAL part
       payment_intent_data: {
         application_fee_amount: lawbiePreTaxShareCents, // Lawbie gets 50% of pre-tax
         // Tax will be automatically added to application fee below
+        transfer_data: {
+          destination: sellerStripeId,
+        },
       },
     }, {
       stripeAccount: sellerStripeId, // Direct charge on seller's account
     });
+
+    console.log('Checkout session created:', session.id);
 
     // Now we know the exact tax amount
     const taxCents = session.total_details?.amount_tax || 0;
 
     // Add full tax to Lawbie's application fee
     if (taxCents > 0) {
-      await stripe.paymentIntents.update(
-        session.payment_intent,
-        {
-          application_fee_amount: lawbiePreTaxShareCents + taxCents,
-        },
-        { stripeAccount: sellerStripeId }
-      );
+      try {
+        await stripe.paymentIntents.update(
+          session.payment_intent,
+          {
+            application_fee_amount: lawbiePreTaxShareCents + taxCents,
+          },
+          { stripeAccount: sellerStripeId }
+        );
+        console.log('Updated application fee with tax:', lawbiePreTaxShareCents + taxCents);
+      } catch (feeError) {
+        console.error('Failed to update application fee:', feeError);
+        // Continue anyway - the payment will still work
+      }
     }
 
     // Update order with final amounts
