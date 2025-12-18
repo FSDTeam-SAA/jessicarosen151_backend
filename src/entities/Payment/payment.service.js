@@ -9,7 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 const EXTRA_ADMIN_FEE_PERCENT = 0.13;
-const SELLER_SHARE_PERCENT = 0.9;
+const SELLER_SHARE_PERCENT = 0.5;
 
 export const createCheckoutSession = async ({
   userId = null,
