@@ -125,24 +125,136 @@ const handleFailedPayment = async (failedObject) => {
 const sendEmails = async (order, session) => {
   try {
     // Buyer Email
+    // const buyerEmail = order.user?.email || session.customer_email;
+    // if (buyerEmail) {
+    //   await sendEmail({
+    //     to: buyerEmail,
+    //     subject: 'Purchase Confirmation',
+    //     html: `<p>Hi ${order.user?.firstName || 'Customer'}, Your order #${order._id} is confirmed.</p>
+    //            <p>Total Paid: $${order.totalAmount}</p>`
+    //   });
+    // }
+
+    // // Seller Email
+    // const seller = order.items[0]?.seller;
+    // if (seller?.email) {
+    //   const sellerShare = Object.values(order.sellerShares || {})[0] / 100;
+    //   await sendEmail({
+    //     to: seller.email,
+    //     subject: 'You Made a Sale!',
+    //     html: `<p>Hi ${seller.firstName || 'Seller'}, you earned $${sellerShare} from order #${order._id}</p>`
+    //   });
+    // }
+
+    const buyerEmailHtml = (order) => `
+  <div style="font-family: Arial, sans-serif; color: #333;">
+    <p>Hi ${order.user?.firstName || 'Customer'},</p>
+
+    <p>
+      Thank you for your purchase on <strong>Lawbie</strong> 🎉
+    </p>
+
+    <p>
+      Your transaction has been successfully processed, and your document(s)
+      are now available for download.
+    </p>
+
+    <p>
+      <strong>Access your files anytime here:</strong><br/>
+      <a href="https://lawbie.com/my-downloads" target="_blank">
+        My Downloads
+      </a>
+    </p>
+
+    <p>
+      You can return to your downloads at any time by logging into your
+      Lawbie account and visiting the My Downloads page.
+    </p>
+
+    <p>
+      If you have any questions or need assistance, feel free to reach out to us
+      at <a href="mailto:support@lawbie.com">support@lawbie.com</a>.
+    </p>
+
+    <br/>
+
+    <p>— we’re happy to help!</p>
+
+    <p>
+      Thank you for supporting legal creators and joining the Lawbie community.
+    </p>
+
+    <br/>
+
+    <p>
+      Best,<br/>
+      <strong>The Lawbie Team</strong><br/>
+      <a href="https://lawbie.com" target="_blank">www.lawbie.com</a>
+    </p>
+  </div>
+`;
+
+    // Buyer Email
     const buyerEmail = order.user?.email || session.customer_email;
     if (buyerEmail) {
       await sendEmail({
         to: buyerEmail,
-        subject: 'Purchase Confirmation',
-        html: `<p>Hi ${order.user?.firstName || 'Customer'}, Your order #${order._id} is confirmed.</p>
-               <p>Total Paid: $${order.totalAmount}</p>`
+        subject: 'Your Lawbie Purchase Confirmation 🧾',
+        html: buyerEmailHtml(order)
       });
     }
+
+    const sellerEmailHtml = (order, sellerShare) => `
+  <div style="font-family: Arial, sans-serif; color: #333;">
+    <p>Hi ${order.items[0]?.seller?.firstName || 'Seller'},</p>
+
+    <p>
+      Great news — your product,
+      <strong>${order.items[0]?.product?.title || 'your product'}</strong>,
+      has just been purchased on <strong>Lawbie</strong> 🎉
+    </p>
+
+    <p>
+      <strong>You’ve earned $${sellerShare}</strong> from this sale.
+    </p>
+
+    <p>
+      Funds will be processed automatically through Stripe.
+    </p>
+
+    <p>
+      You can view all your sales and earnings anytime by visiting your
+      Seller Dashboard:
+      <br/>
+      👉 <a href="https://lawbie.com/seller/dashboard" target="_blank">
+        Go to Dashboard
+      </a>
+    </p>
+
+    <p>
+      Thank you for contributing your expertise to the Lawbie community —
+      your work helps lawyers everywhere save time and practice smarter.
+    </p>
+
+    <br/>
+
+    <p>
+      Best,<br/>
+      <strong>The Lawbie Team</strong><br/>
+      <a href="https://lawbie.com" target="_blank">www.lawbie.com</a>
+    </p>
+  </div>
+`;
 
     // Seller Email
     const seller = order.items[0]?.seller;
     if (seller?.email) {
       const sellerShare = Object.values(order.sellerShares || {})[0] / 100;
+
       await sendEmail({
         to: seller.email,
-        subject: 'You Made a Sale!',
-        html: `<p>Hi ${seller.firstName || 'Seller'}, you earned $${sellerShare} from order #${order._id}</p>`
+        subject: "You've Made a Sale on Lawbie 🎉",
+        html: sellerEmailHtml(order, sellerShare)
       });
     }
   } catch (err) {
