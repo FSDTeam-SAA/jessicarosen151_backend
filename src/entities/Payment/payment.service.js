@@ -139,7 +139,6 @@ export const createCheckoutSession = async ({
       user: userId || null,
       guest: guestId || null,
       totalAmount: finalPreTaxCents / 100,
-      totalAmountAdmin: (adminShareCents + extraAdminFeeCents) / 100,
       discountAmount: Math.round(discountCents * proportion) / 100,
       appliedPromoCode: promoCode || null,
       paymentStatus: 'pending',

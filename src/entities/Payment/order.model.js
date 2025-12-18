@@ -48,10 +48,6 @@ const orderSchema = new Schema(
       type: Number,
       required: true
     },
-    totalAmountAdmin: {
-      type: Number,
-      required: true
-    },
     paymentMethod: {
       type: String,
       default: null
