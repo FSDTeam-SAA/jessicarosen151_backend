@@ -89,9 +89,18 @@ const handlePayment = async (session) => {
 
 const handlePaymentFromIntent = async (intent) => {
   const order = await Order.findById(intent.metadata.orderId)
-    .populate('items.resource')
-    .populate('user')
-    .populate('items.seller');
+    .populate({
+      path: 'items.resource',
+      model: 'Resource'
+    })
+    .populate({
+      path: 'items.seller',
+      model: 'User'
+    })
+    .populate('user');
+  // .populate('items.resource')
+  // .populate('user')
+  // .populate('items.seller');
   if (!order || order.paymentStatus === 'paid') return;
 
   order.paymentStatus = 'paid';
@@ -205,45 +214,36 @@ const sendEmails = async (order, session) => {
     }
 
     const sellerEmailHtml = (order, sellerShare) => `
-  <div style="font-family: Arial, sans-serif; color: #333;">
-    <p>Hi ${order.items[0]?.seller?.firstName || 'Seller'},</p>
+<div style="font-family: Arial, sans-serif; color: #333;">
+  <p>Hi ${order.items[0]?.seller?.firstName || 'Seller'},</p>
 
-    <p>
-      Great news — your product,
-      <strong>${order.items[0]?.product?.title || 'your product'}</strong>,
-      has just been purchased on <strong>Lawbie</strong> 🎉
-    </p>
+  <p>
+    Great news — your product,
+    <strong>${order.items[0]?.resource?.title || 'your product'}</strong>,
+    has just been purchased on <strong>Lawbie</strong> 🎉
+  </p>
 
-    <p>
-      <strong>You’ve earned $${sellerShare}</strong> from this sale.
-    </p>
+  <p>
+    <strong>You’ve earned $${sellerShare}</strong> from this sale.
+  </p>
 
-    <p>
-      Funds will be processed automatically through Stripe.
-    </p>
+  <p>
+    Funds will be processed automatically through Stripe.
+  </p>
 
-    <p>
-      You can view all your sales and earnings anytime by visiting your
-      Seller Dashboard:
-      <br/>
-      👉 <a href="https://lawbie.com/seller/dashboard" target="_blank">
-        Go to Dashboard
-      </a>
-    </p>
+  <p>
+    👉 <a href="https://lawbie.com/seller/dashboard" target="_blank">
+      Go to Dashboard
+    </a>
+  </p>
 
-    <p>
-      Thank you for contributing your expertise to the Lawbie community —
-      your work helps lawyers everywhere save time and practice smarter.
-    </p>
+  <br/>
 
-    <br/>
-
-    <p>
-      Best,<br/>
-      <strong>The Lawbie Team</strong><br/>
-      <a href="https://lawbie.com" target="_blank">www.lawbie.com</a>
-    </p>
-  </div>
+  <p>
+    Best,<br/>
+    <strong>The Lawbie Team</strong>
+  </p>
+</div>
 `;
 
     // Seller Email
