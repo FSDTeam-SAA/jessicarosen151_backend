@@ -67,6 +67,7 @@ const handlePayment = async (session) => {
     .populate('items.resource')
     .populate('user')
     .populate('items.seller');
+  console.log('order', order);
   if (!order || order.paymentStatus === 'paid') return;
 
   order.paymentStatus = 'paid';
@@ -170,7 +171,7 @@ const sendEmails = async (order, session) => {
 
     <p>
       <strong>Access your files anytime here:</strong><br/>
-      <a href="https://lawbie.com/my-downloads" target="_blank">
+      <a href=${order.items[0]?.resource?.file.url} target="_blank">
         My Downloads
       </a>
     </p>
