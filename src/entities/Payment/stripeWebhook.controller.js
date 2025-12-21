@@ -233,7 +233,7 @@ const sendEmails = async (order, session) => {
   </p>
 
   <p>
-    👉 <a href="https://lawbie.com/seller/dashboard" target="_blank">
+    👉 <a href="https://lawbie.com/dashboard" target="_blank">
       Go to Dashboard
     </a>
   </p>
