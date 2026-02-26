@@ -156,6 +156,10 @@ const sendEmails = async (order, session) => {
     //   });
     // }
 
+
+    // Old download link (commented out):
+    // <a href=${order.items[0]?.resource?.file.url} target="_blank">My Downloads</a>
+
     const buyerEmailHtml = (order) => `
   <div style="font-family: Arial, sans-serif; color: #333;">
     <p>Hi ${order.user?.firstName || 'Customer'},</p>
@@ -171,14 +175,13 @@ const sendEmails = async (order, session) => {
 
     <p>
       <strong>Access your files anytime here:</strong><br/>
-      <a href=${order.items[0]?.resource?.file.url} target="_blank">
-        My Downloads
-      </a>
+      <!-- <a href=${order.items[0]?.resource?.file.url} target="_blank">My Downloads</a> -->
+      <a href="https://lawbie.com/account/orders" target="_blank">My Orders</a>
     </p>
 
     <p>
       You can return to your downloads at any time by logging into your
-      Lawbie account and visiting the My Downloads page.
+      Lawbie account and visiting the My Orders page.
     </p>
 
     <p>
