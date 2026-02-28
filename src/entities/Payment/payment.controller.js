@@ -72,7 +72,7 @@ import { createCheckoutSession } from './payment.service.js';
 export const initiateCheckout = async (req, res) => {
   const userId = req.user?.id || null;
   console.log('userId', userId);
-  
+
   let guestId = null;
 
   // Handle guest
@@ -125,6 +125,6 @@ export const initiateCheckout = async (req, res) => {
 
   } catch (error) {
     console.error('Checkout error:', error);
-    return generateResponse(res, 500, false, 'Failed to create checkout session', error.message);
+    return generateResponse(res, 500, false, error.message, []);
   }
 };
