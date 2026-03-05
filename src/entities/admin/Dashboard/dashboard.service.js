@@ -309,79 +309,129 @@ export const getTotalRevenueReportService = async (filter = "month") => {
 
 
 
-export const getAdminSalesHistoryService = async (adminId, search, page = 1, limit = 10) => {
-  const matchStage = {
-    $match: {
-      "items.seller": adminId,
-      paymentStatus: "paid"
-    }
-  };
-
-  const searchStage = search
-    ? {
-        $match: {
-          "resource.productId": { $regex: search, $options: "i" }
-        }
-      }
-    : null;
-
-  const aggregatePipeline = [
-    { $unwind: "$items" },
-    matchStage,
-    {
-      $group: {
-        _id: "$items.resource",
-        quantity: { $sum: "$items.quantity" },
-        amount: { $sum: { $multiply: ["$items.price", "$items.quantity"] } }
-      }
-    },
-    {
-      $lookup: {
-        from: "resources",
-        localField: "_id",
-        foreignField: "_id",
-        as: "resource"
-      }
-    },
-    { $unwind: "$resource" }
-  ];
-
-  if (searchStage) aggregatePipeline.push(searchStage);
-
-  // Clone for count
-  const countPipeline = [...aggregatePipeline, { $count: "total" }];
-  const countResult = await Order.aggregate(countPipeline);
-  const totalItems = countResult[0]?.total || 0;
-
+export const getAdminSalesHistoryService = async (
+  adminId,
+  search = '',
+  page = 1,
+  limit = 10
+) => {
   const skip = (page - 1) * limit;
 
-  aggregatePipeline.push(
+  // Base pipeline: paid orders with items from this admin (as seller)
+  const basePipeline = [
+    {
+      $match: {
+        paymentStatus: 'paid',
+        'items.seller': adminId
+      }
+    },
+    { $unwind: '$items' },
+    {
+      $match: {
+        'items.seller': adminId
+      }
+    },
+    // Join with resources to get product details
+    {
+      $lookup: {
+        from: 'resources',
+        localField: 'items.resource',
+        foreignField: '_id',
+        as: 'items.resourceDoc'
+      }
+    },
+    { $unwind: '$items.resourceDoc' },
+
+    // Optional search on productId
+    ...(search
+      ? [{
+          $match: {
+            'items.resourceDoc.productId': { $regex: search, $options: 'i' }
+          }
+        }]
+      : []
+    ),
+
+    // Final projection: full order + item + product
     {
       $project: {
-        productId: "$resource.productId",
-        quantity: 1,
-        amount: 1,
-        _id: 0
+        orderId: '$_id',
+        createdAt: '$createdAt',
+        totalAmount: '$totalAmount',
+        paymentStatus: '$paymentStatus',
+        orderStatus: '$orderStatus',
+        item: {
+          quantity: '$items.quantity',
+          price: '$items.price',
+          sellerAmount: {
+            $divide: [
+              { $multiply: ['$items.price', '$items.quantity'] },
+              2
+            ]
+          },
+          product: {
+            productId: '$items.resourceDoc.productId',
+            title: '$items.resourceDoc.title',
+            image: { $arrayElemAt: ['$items.resourceDoc.images', 0] }, // adjust if needed
+            // Add more: slug, category, etc.
+          }
+        }
       }
     },
     { $sort: { createdAt: -1 } },
     { $skip: skip },
     { $limit: limit }
-  );
+  ];
 
-  const data = await Order.aggregate(aggregatePipeline);
+  // Count pipeline (same filters, no pagination)
+  const countPipeline = [
+    {
+      $match: {
+        paymentStatus: 'paid',
+        'items.seller': adminId
+      }
+    },
+    { $unwind: '$items' },
+    { $match: { 'items.seller': adminId } },
+    {
+      $lookup: {
+        from: 'resources',
+        localField: 'items.resource',
+        foreignField: '_id',
+        as: 'items.resourceDoc'
+      }
+    },
+    { $unwind: '$items.resourceDoc' },
+    ...(search
+      ? [{
+          $match: {
+            'items.resourceDoc.productId': { $regex: search, $options: 'i' }
+          }
+        }]
+      : []
+    ),
+    { $count: 'total' }
+  ];
+
+  const [data, countResult] = await Promise.all([
+    Order.aggregate(basePipeline),
+    Order.aggregate(countPipeline)
+  ]);
+
+  const totalItems = countResult[0]?.total || 0;
 
   return {
+    success: true,
+    message: 'Admin sales history fetched',
     data,
     pagination: {
-      currentPage: page,
+      currentPage: Number(page),
       totalPages: Math.ceil(totalItems / limit),
       totalItems,
-      itemsPerPage: limit
+      itemsPerPage: Number(limit)
     }
   };
 };
-
 
 
 

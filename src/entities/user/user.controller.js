@@ -24,6 +24,7 @@ import {
   getSellerProfilesWithSalesStatsService,
   getSellerProfileWithStatsServiceId,
   getHappyCustomersService,
+  followSeller,
 
 } from "./user.service.js";
 
@@ -94,6 +95,23 @@ export const deleteUserController = async (req, res) => {
 };
 
 
+
+
+export const followSellerController = async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    const userId = req.user.id; // from verifyToken middleware
+
+    const seller = await followSeller(userId, sellerId);
+
+    generateResponse(res, 200, true, "Successfully followed seller", seller);
+  } catch (error) {
+    generateResponse(res, 500, false, error.message, null);
+  }
+};
+
+
+
 export const createAvatarController = async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,8 +119,6 @@ export const createAvatarController = async (req, res) => {
     if (!req.files?.profileImage) {
       return generateResponse(res, 400, false, 'Profile image is required');
     }
-    // console.log(id)
-
     const user = await createAvatarProfile(id, req.files);
     generateResponse(res, 200, true, 'Avatar uploaded successfully', user);
   } catch (error) {

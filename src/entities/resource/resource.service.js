@@ -2,9 +2,11 @@ import mongoose from "mongoose";
 import Review from "../review/review.model.js";
 import Resource from "./resource.model.js";
 import Order from "../Payment/order.model.js";
+import User from "../auth/auth.model.js";
 
 
 export const createResourceService = async (data) => {
+  
   const resource = new Resource(data);
   return await resource.save();
 };
@@ -19,25 +21,34 @@ export const getAllResourcesService = async (
   resourceType,
   price,
   practiceAreas,
+  subPracticeAreas,
   fileType,
   search,
   country,
   states,
+  divisions,
   formatArray,
   sortedBy
 ) => {
   const query = sellerId ? { createdBy: sellerId } : {};
+
 
   if (status) query.status = new RegExp(`^${status}$`, "i");
   if (fileType) query["file.type"] = new RegExp(`^${fileType}$`, "i");
   if (price) query.discountPrice = { $gte: parseInt(price[0]), $lte: parseInt(price[1]) };
   if (country) query.country = new RegExp(`^${country}$`, "i");
   if (states) query.states = { $in: states.map(s => new RegExp(`^${s}$`, "i")) };
+  if (divisions) query.divisions = { $in: divisions.map(d => new RegExp(`^${d}$`, "i")) };
 
   if (practiceAreas) {
     query.practiceAreas = Array.isArray(practiceAreas)
       ? { $in: practiceAreas.map(p => new RegExp(`^${p}$`, "i")) }
       : new RegExp(`^${practiceAreas}$`, "i");
+  }
+  if (subPracticeAreas) {
+    query.subPracticeAreas = Array.isArray(subPracticeAreas)
+      ? { $in: subPracticeAreas.map(p => new RegExp(`^${p}$`, "i")) }
+      : new RegExp(`^${subPracticeAreas}$`, "i");
   }
 
   if (resourceType) {
@@ -62,6 +73,7 @@ export const getAllResourcesService = async (
     const title = resource.title?.toLowerCase() || "";
     const desc = resource.description?.toLowerCase() || "";
     const areas = resource.practiceAreas?.map(a => a.toLowerCase()) || [];
+    const subAreas = resource.subPracticeAreas?.map(a => a.toLowerCase()) || [];
     const types = resource.resourceType?.map(t => t.toLowerCase()) || [];
     const format = resource.format?.toLowerCase() || "";
     const key = search?.toLowerCase();
@@ -70,6 +82,7 @@ export const getAllResourcesService = async (
     return (
       title.includes(key) ||
       desc.includes(key) ||
+      subAreas.some(a => a.includes(key)) ||
       areas.some(a => a.includes(key)) ||
       types.some(t => t.includes(key)) ||
       format.includes(key)
@@ -201,6 +214,91 @@ export const getAllResourcesService = async (
   };
 };
 
+
+export const getSellerProfileResourcesService = async (
+  sellerId,
+  page,
+  limit,
+  skip,
+  status,
+  resourceTypeArray,
+  priceRange,
+  practiceAreasArray,
+  subPracticeAreasArray,
+  fileType,
+  search,
+  country,
+  statesArray,
+  divisionsArray,
+  formatArray,
+  sortedBy
+) => {
+  try {
+    const match = {
+      createdBy: sellerId,
+      ...(status && { status }),
+      ...(resourceTypeArray?.length > 0 && { resourceType: { $in: resourceTypeArray } }),
+      ...(priceRange && { price: { $gte: priceRange[0], $lte: priceRange[1] } }),
+      ...(practiceAreasArray?.length > 0 && { practiceAreas: { $in: practiceAreasArray } }),
+      ...(subPracticeAreasArray?.length > 0 && { subPracticeAreas: { $in: subPracticeAreasArray } }),
+      ...(fileType && { "file.type": fileType }),
+      ...(search && { $text: { $search: search } }),
+      ...(country && { country }),
+      ...(statesArray?.length > 0 && { states: { $in: statesArray } }),
+      ...(divisionsArray?.length > 0 && { divisions: { $in: divisionsArray } }),
+      ...(formatArray?.length > 0 && { format: { $in: formatArray } }),
+    };
+
+    // Fetch resources
+    const resources = await Resource.find(match)
+      .skip(skip)
+      .limit(limit)
+      .sort(sortedBy ? { [sortedBy]: 1 } : { createdAt: -1 })
+      .lean();
+
+    const totalItems = await Resource.countDocuments(match);
+
+    // Fetch seller profile with followers
+    const sellerProfile = await User.findById(sellerId).select(
+      "firstName lastName phoneNumber email profileImage gender bio isVerified address createdAt followers about"
+    );
+
+    // --- Get resourceIds for this seller ---
+    const resourceIds = await Resource.find({ createdBy: sellerId }).distinct("_id");
+
+    // --- Aggregate reviews for these resources ---
+    const reviewStats = await Review.aggregate([
+      { $match: { resourceId: { $in: resourceIds } } },
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: "$rating" },
+          ratingCount: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const avgRating = reviewStats.length > 0 ? reviewStats[0].avgRating : 0;
+    const ratingCount = reviewStats.length > 0 ? reviewStats[0].ratingCount : 0;
+
+    return {
+      sellerProfile: {
+        ...sellerProfile.toObject(),
+        avgRating: avgRating.toFixed(1), 
+        ratingCount,
+      },
+      data: resources,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalItems / limit),
+        totalItems,
+        itemsPerPage: limit,
+      },
+    };
+  } catch (error) {
+    throw new Error("Error fetching seller resources: " + error.message);
+  }
+};
 
 
 export const getResourceByIdService = async (id, page, limit, skip) => {

@@ -87,6 +87,33 @@ export const deleteUser = async (userId) => {
 };
 
 
+
+
+
+export const followSeller = async (userId, sellerId) => {
+  if (userId === sellerId) {
+    throw new Error("You cannot follow yourself");
+  }
+
+  const seller = await User.findById(sellerId);
+  if (!seller) {
+    throw new Error("Seller not found");
+  }
+
+  if (seller.role !== "SELLER") {
+    throw new Error("Only sellers can be followed");
+  }
+
+  // increment followers
+  seller.followers += 1;
+  await seller.save();
+
+  return seller;
+};
+
+
+
+
 // Upload avatar
 export const createAvatarProfile = async (id, files) => {
 
@@ -171,7 +198,6 @@ export const deleteAvatarProfile = async (id) => {
     
     // Delete from Cloudinary
     const cloudinaryResult = await cloudinary.uploader.destroy(publicId);
-    console.log('Cloudinary deletion result:', cloudinaryResult);
     
     // Verify deletion was successful
     if (cloudinaryResult.result !== 'ok') {
@@ -613,9 +639,7 @@ export const getSellerProfileWithStatsServiceId = async (sellerId) => {
 };
 
 
-
 export const getHappyCustomersService = async () => {
- 
   const topBuyers = await Order.aggregate([
     { $match: { paymentStatus: "paid" } },
     { $unwind: "$items" },
@@ -629,15 +653,20 @@ export const getHappyCustomersService = async () => {
     { $limit: 4 }
   ]);
 
-
-  const userIds = topBuyers.map(user => user._id);
+  // collect only non-null IDs
+  const userIds = topBuyers.map(user => user._id).filter(Boolean);
 
   const users = await User.find({ _id: { $in: userIds } })
     .select("profileImage")
     .lean();
 
-  const userMap = new Map(users.map(user => [user._id.toString(), user]));
-  const sortedUsers = topBuyers.map(u => userMap.get(u._id.toString())).filter(Boolean);
+  const userMap = new Map(
+    users.filter(u => u?._id).map(user => [user._id.toString(), user])
+  );
+
+  const sortedUsers = topBuyers
+    .map(u => userMap.get(u._id?.toString()))
+    .filter(Boolean);
 
   return sortedUsers;
 };

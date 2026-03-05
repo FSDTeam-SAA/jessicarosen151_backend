@@ -15,6 +15,9 @@ const resourceSchema = new Schema(
       type: String,
       default: ""
     }],
+    divisions: [{
+      type: String
+    }],
     resourceType: {
       type: [String],
       default: []
@@ -22,10 +25,6 @@ const resourceSchema = new Schema(
     description: {
       type: String,
       default: ""
-    },
-    price: {
-      type: Number,
-      required: true
     },
     discountPrice: {
       type: Number,
@@ -49,7 +48,8 @@ const resourceSchema = new Schema(
       }
     },
     thumbnail: {
-      type: String
+      type: String,
+      default: "https://celadonbooks.com/wp-content/uploads/2020/02/what-is-literary-fiction.jpg"
     },
     images: {
       type: [String],
@@ -62,7 +62,7 @@ const resourceSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["draft", "pending", "approved", "rejected"],
       default: "pending"
     },
     productId: {
@@ -71,6 +71,10 @@ const resourceSchema = new Schema(
       required: true
     },
     practiceAreas: {
+      type: [String],
+      default: []
+    },
+    subPracticeAreas: {
       type: [String],
       default: []
     }

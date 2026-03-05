@@ -17,10 +17,10 @@ const UserSchema = new mongoose.Schema(
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     phoneNumber: { type: String, default: '' },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true },
     password: { type: String, required: true },
-    username: { type: String, unique: true, default: '' },
     dob: { type: Date, default: null },
+    about: { type: String, default: '' },
     gender: {
       type: String,
       enum: ['male', 'female', 'other'],
@@ -53,10 +53,19 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
+      isVerified: {
+      type: Boolean,
+      default: false,
+    },
 
     refreshToken: {
       type: String,
       default: ''
+    },
+
+    followers: {
+      type: Number,
+      default: 0
     },
 
     hasActiveSubscription: { type: Boolean, default: false },
